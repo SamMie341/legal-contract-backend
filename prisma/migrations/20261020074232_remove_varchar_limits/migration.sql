@@ -1,0 +1,47 @@
+-- AlterTable
+ALTER TABLE "audit_logs" ALTER COLUMN "ip_address" SET DATA TYPE TEXT;
+
+-- AlterTable
+ALTER TABLE "contract_attachments" ALTER COLUMN "file_name" SET DATA TYPE TEXT,
+ALTER COLUMN "storage_key" SET DATA TYPE TEXT,
+ALTER COLUMN "mime_type" SET DATA TYPE TEXT,
+ALTER COLUMN "checksum" SET DATA TYPE TEXT;
+
+-- AlterTable
+ALTER TABLE "contract_download_logs" ALTER COLUMN "ip_address" SET DATA TYPE TEXT;
+
+-- AlterTable
+ALTER TABLE "contract_notifications" ALTER COLUMN "title" SET DATA TYPE TEXT;
+
+-- AlterTable
+ALTER TABLE "contract_types" ALTER COLUMN "code" SET DATA TYPE TEXT,
+ALTER COLUMN "name_lo" SET DATA TYPE TEXT,
+ALTER COLUMN "name_en" SET DATA TYPE TEXT;
+
+-- AlterTable
+ALTER TABLE "contracts" ALTER COLUMN "title" SET DATA TYPE TEXT,
+ALTER COLUMN "contract_number" SET DATA TYPE TEXT,
+ALTER COLUMN "duration_text" SET DATA TYPE TEXT,
+ALTER COLUMN "implementer" SET DATA TYPE TEXT;
+
+-- AlterTable
+ALTER TABLE "support_tickets" ALTER COLUMN "ticket_number" SET DATA TYPE TEXT,
+ALTER COLUMN "subject" SET DATA TYPE TEXT,
+ALTER COLUMN "attachment_url" SET DATA TYPE TEXT;
+
+-- AlterTable
+ALTER TABLE "system_contact_channels" ALTER COLUMN "channel_name" SET DATA TYPE TEXT,
+ALTER COLUMN "contact_info" SET DATA TYPE TEXT,
+ALTER COLUMN "description" SET DATA TYPE TEXT;
+
+-- AlterTable
+ALTER TABLE "users" ALTER COLUMN "employee_code" SET DATA TYPE TEXT,
+ALTER COLUMN "username" SET DATA TYPE TEXT,
+ALTER COLUMN "email" SET DATA TYPE TEXT,
+ALTER COLUMN "password_hash" SET DATA TYPE TEXT,
+ALTER COLUMN "full_name" SET DATA TYPE TEXT,
+ALTER COLUMN "department" SET DATA TYPE TEXT,
+ALTER COLUMN "position" SET DATA TYPE TEXT,
+ALTER COLUMN "phone" SET DATA TYPE TEXT,
+ALTER COLUMN "division" SET DATA TYPE TEXT,
+ALTER COLUMN "unit" SET DATA TYPE TEXT;

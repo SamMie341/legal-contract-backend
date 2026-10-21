@@ -1,0 +1,1032 @@
+{
+  "info": {
+    "_postman_id": "a5e8f4c2-9e20-410a-b3e1-d1f568a0a991",
+    "name": "Legal Contract Management API (ລະບົບຈັດເກັບຂໍ້ມູນ ພະແນກສັນຍາທົ່ວໄປ)",
+    "description": "API collection for Legal Contract Management System (NestJS Clean Architecture).\nIncludes endpoints for Auth, Contract Types (CRUD & Dropdown), Contracts, Attachments, Notifications, Users (Sync from HRM & Permissions), Support & Tickets, and Audit Logs.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{accessToken}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000/api",
+      "type": "string"
+    },
+    {
+      "key": "accessToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "contractTypeId",
+      "value": "1",
+      "type": "string"
+    },
+    {
+      "key": "contractId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "attachmentId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "notificationId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "userId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "empCode",
+      "value": "EDL-001",
+      "type": "string"
+    },
+    {
+      "key": "ticketId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "contactChannelId",
+      "value": "1",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "01. Auth (ການຢັ້ງຢືນຕົວຕົນ)",
+      "item": [
+        {
+          "name": "Local Login (Admin)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const jsonData = pm.response.json();",
+                  "if (jsonData.accessToken) {",
+                  "    pm.collectionVariables.set(\"accessToken\", jsonData.accessToken);",
+                  "    pm.environment.set(\"accessToken\", jsonData.accessToken);",
+                  "}",
+                  "pm.test(\"Status code is 200 OK\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Has accessToken\", () => pm.expect(jsonData).to.have.property(\"accessToken\"));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"admin\",\n  \"password\": \"Admin@1234\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            }
+          }
+        },
+        {
+          "name": "HRM Login & Sync",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const jsonData = pm.response.json();",
+                  "if (jsonData.accessToken) {",
+                  "    pm.collectionVariables.set(\"accessToken\", jsonData.accessToken);",
+                  "    pm.environment.set(\"accessToken\", jsonData.accessToken);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"Ton\",\n  \"password\": \"HRM1234\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/hrm-login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "hrm-login"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get My Profile & Permissions (GET /auth/me)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/auth/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "me"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "02. Contract Types (ປະເພດສັນຍາ CRUD & Dropdown)",
+      "item": [
+        {
+          "name": "Get Contract Types Dropdown (GET /contract-types/dropdown)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/contract-types/dropdown",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "contract-types",
+                "dropdown"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get All Contract Types (GET /contract-types)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/contract-types?search=&isActive=true",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "contract-types"
+              ],
+              "query": [
+                {
+                  "key": "search",
+                  "value": ""
+                },
+                {
+                  "key": "isActive",
+                  "value": "true"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Contract Type by ID (GET /contract-types/:id)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/contract-types/{{contractTypeId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "contract-types",
+                "{{contractTypeId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Contract Type (POST /contract-types)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const jsonData = pm.response.json();",
+                  "if (jsonData.data && jsonData.data.id) {",
+                  "    pm.collectionVariables.set(\"contractTypeId\", String(jsonData.data.id));",
+                  "    pm.environment.set(\"contractTypeId\", String(jsonData.data.id));",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nameLo\": \"ສັນຍາ ບໍລິການທີ່ປຶກສາ\",\n  \"nameEn\": \"Consulting Service Agreement\",\n  \"isActive\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/contract-types",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "contract-types"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Contract Type (PATCH /contract-types/:id)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nameLo\": \"ສັນຍາ ບໍລິການທີ່ປຶກສາ (ປັບປຸງ)\",\n  \"nameEn\": \"Updated Consulting Service Agreement\",\n  \"isActive\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/contract-types/{{contractTypeId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "contract-types",
+                "{{contractTypeId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delete Contract Type (DELETE /contract-types/:id)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/contract-types/{{contractTypeId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "contract-types",
+                "{{contractTypeId}}"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "03. Contracts (ການຈັດການສັນຍາ)",
+      "item": [
+        {
+          "name": "Get Dashboard Stats (GET /contracts/dashboard)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/contracts/dashboard",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "contracts",
+                "dashboard"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Contracts List & Filters (GET /contracts)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/contracts?page=1&limit=10&search=&status=ACTIVE",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "contracts"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                },
+                {
+                  "key": "search",
+                  "value": ""
+                },
+                {
+                  "key": "status",
+                  "value": "ACTIVE"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Contract by ID (GET /contracts/:id)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/contracts/{{contractId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "contracts",
+                "{{contractId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Contract (POST /contracts)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const jsonData = pm.response.json();",
+                  "if (jsonData.data && jsonData.data.id) {",
+                  "    pm.collectionVariables.set(\"contractId\", jsonData.data.id);",
+                  "    pm.environment.set(\"contractId\", jsonData.data.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"ສັນຍາ ບໍລິການ O&M ລະບົບສາຍສົ່ງ 230kV\",\n  \"contractTypeId\": 1,\n  \"contractNumber\": \"EDL-OM-2026/001\",\n  \"durationText\": \"5 ປີ\",\n  \"signedDate\": \"2026-01-15T00:00:00.000Z\",\n  \"effectiveDate\": \"2026-02-01T00:00:00.000Z\",\n  \"expirationDate\": \"2031-01-31T00:00:00.000Z\",\n  \"contractValue\": 5000000000,\n  \"currency\": \"LAK\",\n  \"equityOrCapitalContribution\": \"100%\",\n  \"implementer\": \"ພະແນກສັນຍາທົ່ວໄປ ແລະ ຝ່າຍບຳລຸງຮັກສາ\",\n  \"additionalDetails\": \"ສັນຍາບໍລິການບຳລຸງຮັກສາ ແລະ ດຳເນີນງານລະບົບໄຟຟ້າ\",\n  \"notifyDaysBefore\": 60\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/contracts",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "contracts"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Contract (PATCH /contracts/:id)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"ສັນຍາ ບໍລິການ O&M ລະບົບສາຍສົ່ງ 230kV (ສະບັບປັບປຸງ)\",\n  \"contractValue\": 5500000000,\n  \"additionalDetails\": \"ເພີ່ມມູນຄ່າ ແລະ ຂອບເຂດການບໍລິການ\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/contracts/{{contractId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "contracts",
+                "{{contractId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delete Contract (DELETE /contracts/:id)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/contracts/{{contractId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "contracts",
+                "{{contractId}}"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "04. Attachments (ເອກະສານຕິດຄັດ)",
+      "item": [
+        {
+          "name": "List Contract Attachments (GET /contracts/:id/attachments)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/contracts/{{contractId}}/attachments",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "contracts",
+                "{{contractId}}",
+                "attachments"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Upload Attachment (POST /contracts/:id/attachments)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const jsonData = pm.response.json();",
+                  "if (jsonData.data && jsonData.data.id) {",
+                  "    pm.collectionVariables.set(\"attachmentId\", jsonData.data.id);",
+                  "    pm.environment.set(\"attachmentId\", jsonData.data.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": ""
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/contracts/{{contractId}}/attachments",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "contracts",
+                "{{contractId}}",
+                "attachments"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Download Attachment (GET /contracts/attachments/:attachmentId/download)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/contracts/attachments/{{attachmentId}}/download",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "contracts",
+                "attachments",
+                "{{attachmentId}}",
+                "download"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delete Attachment (DELETE /contracts/attachments/:attachmentId)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/contracts/attachments/{{attachmentId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "contracts",
+                "attachments",
+                "{{attachmentId}}"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "05. Notifications (ການແຈ້ງເຕືອນ)",
+      "item": [
+        {
+          "name": "Get Notifications (GET /notifications)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/notifications?unreadOnly=true",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "notifications"
+              ],
+              "query": [
+                {
+                  "key": "unreadOnly",
+                  "value": "true"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Mark All Notifications as Read (PATCH /notifications/read-all)",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/notifications/read-all",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "notifications",
+                "read-all"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Mark Single Notification as Read (PATCH /notifications/:id/read)",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/notifications/{{notificationId}}/read",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "notifications",
+                "{{notificationId}}",
+                "read"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "06. Users & HRM Sync (ການຈັດການຜູ້ໃຊ້ ແລະ Sync ຈາກ HRM)",
+      "item": [
+        {
+          "name": "Lookup HRM Employee Auto-fill (GET /users/hrm/:empCode)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/users/hrm/{{empCode}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "hrm",
+                "{{empCode}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create User by HRM Sync (POST /users)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const jsonData = pm.response.json();",
+                  "if (jsonData.data && jsonData.data.id) {",
+                  "    pm.collectionVariables.set(\"userId\", jsonData.data.id);",
+                  "    pm.environment.set(\"userId\", jsonData.data.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"employeeCode\": \"EDL-005\",\n  \"role\": \"MAIN_USER\",\n  \"canView\": true,\n  \"canUpload\": true,\n  \"canEdit\": true,\n  \"canDelete\": false,\n  \"canDownload\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/users",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users"
+              ]
+            }
+          }
+        },
+        {
+          "name": "List Users (GET /users)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/users?page=1&limit=10&search=&role=&isActive=true",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                },
+                {
+                  "key": "search",
+                  "value": ""
+                },
+                {
+                  "key": "role",
+                  "value": ""
+                },
+                {
+                  "key": "isActive",
+                  "value": "true"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get User by ID (GET /users/:id)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/users/{{userId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "{{userId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update User Role, Status & Permissions (PATCH /users/:id)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"role\": \"MAIN_USER\",\n  \"isActive\": true,\n  \"canView\": true,\n  \"canUpload\": true,\n  \"canEdit\": true,\n  \"canDelete\": true,\n  \"canDownload\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/users/{{userId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "{{userId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delete User Soft Delete (DELETE /users/:id)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/users/{{userId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "{{userId}}"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "07. Support & Feedback (ຊ່ອງທາງຕິດຕໍ່ ແລະ ແຈ້ງບັນຫາ)",
+      "item": [
+        {
+          "name": "Get Contact Channels (GET /support/contacts)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/support/contacts",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "support",
+                "contacts"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Contact Channel (POST /support/contacts)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"channelName\": \"ສາຍດ່ວນ IT Support ພະແນກສັນຍາ\",\n  \"contactInfo\": \"+856 21 316123 ຫຼື itsupport@edl.com.la\",\n  \"description\": \"ວັນຈັນ - ວັນສຸກ ເວລາ 08:30 - 16:30\",\n  \"sortOrder\": 1,\n  \"isActive\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/support/contacts",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "support",
+                "contacts"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delete Contact Channel (DELETE /support/contacts/:id)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/support/contacts/{{contactChannelId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "support",
+                "contacts",
+                "{{contactChannelId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Submit Support Ticket (POST /support/tickets)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const jsonData = pm.response.json();",
+                  "if (jsonData.data && jsonData.data.id) {",
+                  "    pm.collectionVariables.set(\"ticketId\", jsonData.data.id);",
+                  "    pm.environment.set(\"ticketId\", jsonData.data.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"subject\": \"ຂໍເພີ່ມຊ່ອງທາງການຄົ້ນຫາຕາມວັນທີລົງລາຍເຊັນ\",\n  \"description\": \"ຕ້ອງການໃຫ້ໜ້າຕາຕະລາງສັນຍາສາມາດ Filter ຕາມຊ່ວງວັນທີ Signed Date ໄດ້\",\n  \"priority\": \"MEDIUM\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/support/tickets",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "support",
+                "tickets"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Support Tickets (GET /support/tickets)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/support/tickets?page=1&limit=10&status=OPEN",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "support",
+                "tickets"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                },
+                {
+                  "key": "status",
+                  "value": "OPEN"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Support Ticket by ID (GET /support/tickets/:id)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/support/tickets/{{ticketId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "support",
+                "tickets",
+                "{{ticketId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Ticket Status (PATCH /support/tickets/:id)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"IN_PROGRESS\",\n  \"adminNote\": \"ກຳລັງດຳເນີນການພັດທະນາຟີເຈີນີ້ໃນ Sprint ຖັດໄປ\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/support/tickets/{{ticketId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "support",
+                "tickets",
+                "{{ticketId}}"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "08. Audit Logs (ປະຫວັດການດຳເນີນງານ)",
+      "item": [
+        {
+          "name": "Get Audit Logs (GET /audit-logs)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/audit-logs?page=1&limit=20&action=CREATE_CONTRACT",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "audit-logs"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                },
+                {
+                  "key": "action",
+                  "value": "CREATE_CONTRACT"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
