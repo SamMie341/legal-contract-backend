@@ -23,7 +23,7 @@ RUN npx prisma generate --config prisma7.config.ts \
 # ---------- Stage 3: runner (production image เล็ก ๆ) ----------
 FROM node:24-alpine AS runner
 ENV NODE_ENV=production \
-    PORT=3000 \
+    PORT=3001 \
     UPLOAD_DIR=/app/uploads/contracts
 WORKDIR /app
 
@@ -38,7 +38,7 @@ COPY --from=builder /app/dist ./dist
 RUN mkdir -p /app/uploads/contracts && chown -R node:node /app
 USER node
 
-EXPOSE 3000
+EXPOSE 3001
 VOLUME ["/app/uploads"]
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
