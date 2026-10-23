@@ -8,10 +8,12 @@ import { UpdateContractUseCase } from './application/use-cases/update-contract.u
 import { DeleteContractUseCase } from './application/use-cases/delete-contract.use-case.js';
 import { GetContractsUseCase } from './application/use-cases/get-contracts.use-case.js';
 import { GetContractByIdUseCase } from './application/use-cases/get-contract-by-id.use-case.js';
+import { GetContractHistoryUseCase } from './application/use-cases/get-contract-history.use-case.js';
 import { GetDashboardStatsUseCase } from './application/use-cases/get-dashboard-stats.use-case.js';
 
 import { UploadAttachmentUseCase } from './application/use-cases/upload-attachment.use-case.js';
 import { DownloadAttachmentUseCase } from './application/use-cases/download-attachment.use-case.js';
+import { PreviewAttachmentUseCase } from './application/use-cases/preview-attachment.use-case.js';
 import { GetAttachmentsUseCase } from './application/use-cases/get-attachments.use-case.js';
 import { DeleteAttachmentUseCase } from './application/use-cases/delete-attachment.use-case.js';
 
@@ -34,9 +36,11 @@ import { NotificationRepository } from './infrastructure/repositories/notificati
         DeleteContractUseCase,
         GetContractsUseCase,
         GetContractByIdUseCase,
+        GetContractHistoryUseCase,
         GetDashboardStatsUseCase,
         UploadAttachmentUseCase,
         DownloadAttachmentUseCase,
+        PreviewAttachmentUseCase,
         GetAttachmentsUseCase,
         DeleteAttachmentUseCase,
         ContractExpiryCronService,

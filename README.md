@@ -1,114 +1,113 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# ລະບົບຄຸ້ມຄອງສັນຍາ, ນິຕິກຳ ແລະ ຄະດີຄວາມ ໄຟຟ້າລາວ (EDL Legal Management System)
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+Backend API ລະບົບຄຸ້ມຄອງວຽກງານກົດໝາຍ ຂອງ **ລັດວິສາຫະກິດໄຟຟ້າລາວ (EDL)** ພັດທະນາດ້ວຍ **NestJS (Node.js ESM + TypeScript)**, **Prisma ORM 7** ແລະ **PostgreSQL**.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+> 📖 **ເອກະສານລະອຽດກ່ຽວກັບ Flow ຂອງລະບົບ ແລະ ການແຍກໂມດູນ:**  
+> ເບິ່ງໄດ້ທີ່ໄຟລ໌ [**`SYSTEM_FLOW_AND_MODULES.md`**](./SYSTEM_FLOW_AND_MODULES.md)
 
-## Description
+---
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+## 🏛️ 3 ພາກສ່ວນຫຼັກຂອງລະບົບ (Core Pillars)
 
-## Project setup
+1. **ພະແນກສັນຍາທົ່ວໄປ (`ContractsModule`)**:
+   - ຕິດຕາມ ແລະ ຄຸ້ມຄອງສັນຍາ 14 ປະເພດ
+   - ແຈ້ງເຕືອນສັນຍາໃກ້ໝົດອາຍຸອັດຕະໂນມັດຜ່ານ Cron Job (ທຸກທ່ຽງຄືນ, ແຈ້ງລ່ວງໜ້າ &le; 60 ວັນ)
+   - ຮອງຮັບ 3 ສະກຸນເງິນ: ກີບ (LAK), ໂດລາ (USD) ແລະ ຢວນ (CNY)
+   - ໄຟລ໌ແນບສັນຍາ (Upload, Preview PDF/Image, Download, Delete)
+   - Dashboard ສະຖິຕິສັນຍາ ແລະ ມູນຄ່າລວມ
 
+2. **ພະແນກນິຕິກຳ (`LegalDocumentsModule`)**:
+   - ຄຸ້ມຄອງນິຕິກຳ, ລະບຽບການ, ຂໍ້ກຳນົດ, ແຈ້ງການ, ສັນຍາ, ປຶ້ມຄູ່ມື
+   - ຈັດໝວດໝູ່ຕາມປີ, ເລກທີ, ວັນທີ ແລະ ຫ້ອງການ/ຝ່າຍທີ່ຮັບຜິດຊອບ
+   - ໄຟລ໌ເອກະສານແນບ (Upload, Preview Inline, Download, Soft Delete)
+   - Dashboard ນິຕິກຳ (Donut Chart ຕາມປະເພດ, Bar Chart ຕາມຝ່າຍ)
+
+3. **ພະແນກແກ້ໄຂຂໍ້ຂັດແຍ່ງ ແລະ ດຳເນີນຄະດີ (`LegalCasesModule`)**:
+   - ຕິດຕາມສຳນວນຄະດີ ແລະ ຂໍ້ຂັດແຍ່ງ (ການຄ້າ, ແພ່ງ, ອາຍາ, ບໍລິຫານ)
+   - ຂັ້ນຕອນສານ: ສານຂັ້ນຕົ້ນ (`FIRST_INSTANCE`), ອຸທອນ (`APPEAL`), ລົບລ້າງ (`SUPREME`), ຈົບຄະດີ (`CLOSED`), ສຳເລັດ (`RESOLVED`)
+   - ຕິດຕາມການເງິນ 2 ສະກຸນ (LAK & USD): ມູນຄ່າເສຍຫາຍ, ຄ່າປັບໃໝ, ລວມຍອດທີ່ຕ້ອງຊຳລະ (Auto-calc), ຍອດກູ້ຄືນໄດ້
+   - ຄົ້ນຫາໄດ້ທັງ UUID ແລະ `caseCode` (ເຊັ່ນ: `EDL-2026-005`)
+   - ໄຟລ໌ສຳນວນຄະດີ (Upload, Preview, Download, Soft Delete)
+   - Dashboard ຄະດີ: ຍອດລວມການເງິນ LAK/USD, Donut & Bar Charts
+
+---
+
+## 🛠️ ໂມດູນສະໜັບສະໜູນ (Platform & Support Modules)
+
+- **`AuthModule`**: ຢັ້ງຢືນຕົວຕົນຜ່ານ EDL HRM API (`https://api-test.edl.com.la/hrm/api`) ແລະ ອອກ JWT
+- **`UsersModule`**: ຈັດການຜູ້ໃຊ້, ດຶງຂໍ້ມູນພະນັກງານຈາກ HRM, ກຳນົດສິດລະອຽດ (`canView`, `canUpload`, `canEdit`, `canDelete`, `canDownload`)
+- **`DepartmentsModule`**: Sync ຫ້ອງການ/ຝ່າຍຈາກ HRM, Dropdown ລາຍຊື່ຝ່າຍ
+- **`ContractTypesModule`**: Master Data 14 ປະເພດສັນຍາ
+- **`SupportModule`**: ຊ່ອງທາງຕິດຕໍ່ສາຍດ່ວນ, WhatsApp, ລະບົບແຈ້ງບັນຫາ (Ticket)
+- **`AuditLogsModule`**: ບັນທຶກປະຫວັດການດຳເນີນງານທັງໝົດໃນລະບົບ (Audit Trail)
+
+---
+
+## 🚀 ການຕິດຕັ້ງ ແລະ ເປີດໃຊ້ງານ (Getting Started)
+
+### 1. ຕິດຕັ້ງ Dependencies
 ```bash
-$ npm install
+npm install
 ```
 
-## Compile and run the project
-
-```bash
-# development
-$ npm run start
-
-# watch mode
-$ npm run start:dev
-
-# production mode
-$ npm run start:prod
+### 2. ຕັ້ງຄ່າ Environment Variables
+ສ້າງໄຟລ໌ `.env` ໂດຍອ້າງອີງຈາກ `.env.example`:
+```env
+DATABASE_URL="postgresql://postgres:postgres@localhost:5432/edl_legal_db?schema=public"
+JWT_SECRET="your-super-secret-jwt-key"
+JWT_EXPIRATION="7d"
+HRM_BASE_URL="https://api-test.edl.com.la/hrm/api"
+HRM_SYNC_USERNAME="Ton"
+HRM_SYNC_PASSWORD="HRM1234"
+UPLOAD_DIR="../uploads/contracts"
+UPLOAD_DIR_LEGAL_DOCS="../uploads/legal-documents"
+UPLOAD_DIR_LEGAL_CASES="../uploads/legal-cases"
+PORT=3000
 ```
 
-## Run tests
-
+### 3. Prisma Generate & Migrate
 ```bash
-# unit tests
-$ npm run test
-
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
+npx prisma generate
+npx prisma migrate dev --name init
+npx prisma db seed
 ```
 
-## Deployment
-
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
-
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
-
+### 4. Run Application
 ```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
+# Development
+npm run start:dev
+
+# Production Build & Start
+npm run build
+npm run start:prod
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+### 5. Swagger API Documentation
+ເມື່ອເປີດ Server ແລ້ວ ສາມາດເຂົ້າເບິ່ງ API Docs ໄດ້ທີ່:
+👉 **`http://localhost:3000/api/docs`**
 
-## Observability
+---
 
-In production applications, observability is essential for understanding how your system behaves, detecting issues early, and maintaining reliable performance.
+## 📁 ໂຄງສ້າງລະຫັດ (Clean Architecture Pattern)
 
-[NestJS Observe](https://observe.nestjs.com) automatically instruments your NestJS application, giving you deep visibility into your system with minimal setup:
+```text
+src/
+├── core/                   <-- Decorators, Guards, Interceptors, Pipes
+├── infrastructure/         <-- Database (PrismaModule), Global Config
+└── modules/
+    ├── auth/               <-- HRM SSO, JWT Token
+    ├── users/              <-- Users & HRM Sync
+    ├── departments/        <-- Departments & HRM Sync
+    ├── contract-types/     <-- Master Data Contract Types
+    ├── contracts/          <-- Core Contracts, Attachments, Expiry Cron
+    ├── legal-documents/    <-- Legal Documents, Attachments, Dashboard
+    ├── legal-cases/        <-- Legal Cases, Financials, Attachments, Dashboard
+    ├── support/            <-- Support Tickets & Contact Channels
+    └── audit-logs/         <-- System Audit Trail
+```
 
-- **Distributed tracing:** Follow requests across services and understand how they flow through your system.
-- **Waterfall analysis:** Visualize request execution and identify slow operations, bottlenecks, and unexpected delays.
-- **Performance analysis:** Analyze application performance in real time and quickly pinpoint areas that need optimization.
-- **Metrics:** Track key application and infrastructure metrics to understand system health and performance trends.
-- **Logging:** Centralize and correlate logs with traces and other telemetry to make debugging easier.
-- **Error tracking:** Detect errors quickly and investigate their root causes with the surrounding context.
-- **SLA monitoring:** Track service-level objectives and identify when your application is approaching or exceeding defined thresholds.
-- **Alarms and alerts:** Set up alerts for critical errors, performance degradation, SLA violations, and other anomalies so your team can react quickly.
+---
 
-## Resources
-
-Check out a few resources that may come in handy when working with NestJS:
-
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Auto-instrument your application with [NestJS Observer](https://observer.nestjs.com). Distributed tracing, metrics, and logging made easy. Error tracking and performance monitoring for your NestJS applications.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
-
-## Support
-
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
-
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
-
-## License
-
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+## 📮 Postman Collection
+ໄຟລ໌ Postman Collection ພ້ອມ Request ຕົວຢ່າງຄົບທຸກ Endpoints:
+- [`legal-contract-management.postman_collection.json`](./legal-contract-management.postman_collection.json)

@@ -12,13 +12,12 @@ export class DownloadAttachmentUseCase {
     async execute(attachmentId: string, user: any, ipAddress?: string, userAgent?: string) {
         // 1. เช็คสิทธิ์การดาวน์โหลด (ตามเอกสาร Requirement ข้อ 5)
         // - Admin โหลดได้เสมอ
-        // - Main User ต้องมีสิทธิ์ canDownload = true
-        // - Editor / Viewer โหลดไม่ได้ (หรือปรับตามนโยบายองค์กร)
+        // - ผู้ใช้ที่ได้รับอนุญาต canDownload = true
         const isAdmin = user.role === UserRole.ADMIN;
-        const isAuthorizedMainUser = user.role === UserRole.MAIN_USER && user.canDownload === true;
+        const isAuthorizedUser = user.canDownload === true;
 
-        if (!isAdmin && !isAuthorizedMainUser) {
-            throw new ForbiddenException('ທ່ານບໍ່ມີສິດດາວໂຫຼດໄຟລ໌ນີ້ (Permission Denied)');
+        if (!isAdmin && !isAuthorizedUser) {
+            throw new ForbiddenException('ທ່ານບໍ່ມີສິດດາວໂຫຼດໄຟລ໌ນີ້ (Permission Denied: canDownload required)');
         }
 
         // 2. ค้นหาไฟล์ในระบบ

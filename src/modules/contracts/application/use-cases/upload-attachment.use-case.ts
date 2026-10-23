@@ -1,4 +1,5 @@
-import { Injectable, Inject, BadRequestException, NotFoundException } from '@nestjs/common';
+import { Injectable, Inject, BadRequestException, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { UserRole } from '@prisma/client';
 import * as contractAttachmentRepositoryInterface from '../../domain/repositories/contract-attachment.repository.interface.js';
 import { CONTRACT_REPOSITORY, type IContractRepository } from '../../domain/repositories/contract.repository.interface.js';
 
@@ -11,7 +12,19 @@ export class UploadAttachmentUseCase {
         private readonly contractRepo: IContractRepository,
     ) { }
 
-    async execute(contractId: string, file: Express.Multer.File, userId: string) {
+    async execute(contractId: string, file: Express.Multer.File, user: any) {
+        const isObjectUser = typeof user === 'object' && user !== null;
+        if (isObjectUser) {
+            const canUpload =
+                user.role === UserRole.ADMIN ||
+                user.role === UserRole.MAIN_USER ||
+                user.canUpload === true;
+            if (!canUpload) {
+                throw new ForbiddenException('ທ່ານບໍ່ມີສິດອັບໂຫຼດໄຟລ໌ແນບ (Permission Denied: canUpload required)');
+            }
+        }
+        const userId = isObjectUser ? user.userId : user;
+
         if (!file) throw new BadRequestException('ກະລຸນາເລືອກໄຟລ໌ (No file provided)');
 
         // 1. เช็คว่าสัญญาที่ระบุมีอยู่จริงไหม

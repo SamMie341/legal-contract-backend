@@ -99,6 +99,26 @@ async function main() {
     }
 
     console.log('✅ Seeded Sample Contact Channels successfully.');
+
+    // 4. Seed Sample Departments (ຫ້ອງການ/ຝ່າຍ/ສະຖາບັນ ຂອງ ຟຟລ)
+    const departments = [
+        { name: 'ຫ້ອງການຜູ້ອຳນວຍການໃຫຍ່', code: 'MD-OFFICE' },
+        { name: 'ຝ່າຍກົດໝາຍ ແລະ ນິຕິກຳ', code: 'LEGAL-DIV' },
+        { name: 'ຝ່າຍບັນຊີ-ການເງິນ', code: 'FIN-DIV' },
+        { name: 'ຝ່າຍຈັດຕັ້ງ ແລະ ບຸກຄະລາກອນ', code: 'HR-DIV' },
+        { name: 'ຝ່າຍປະຕິບັດການໄຟຟ້າ', code: 'OPS-DIV' },
+        { name: 'ຝ່າຍເຕັກໂນໂລຊີຂໍ້ມູນຂ່າວສານ (IT)', code: 'IT-DIV' },
+    ];
+
+    for (const dept of departments) {
+        await prisma.department.upsert({
+            where: { name: dept.name },
+            update: { code: dept.code, isActive: true },
+            create: dept,
+        });
+    }
+
+    console.log('✅ Seeded Sample Departments successfully.');
 }
 
 main()

@@ -1,4 +1,4 @@
-import { Contract, ContractType, ContractStatus } from '@prisma/client';
+import { Contract, ContractType, ContractStatus, AuditAction } from '@prisma/client';
 import { CreateContractDto } from '../../application/dto/create-contract.dto.js';
 import { UpdateContractDto } from '../../application/dto/update-contract.dto.js';
 
@@ -7,6 +7,14 @@ export const CONTRACT_REPOSITORY = Symbol('CONTRACT_REPOSITORY');
 export interface IContractRepository {
     findContractTypeById(id: number): Promise<ContractType | null>;
     findById(id: string): Promise<any | null>;
+    getContractHistory(
+        contractId: string,
+        params?: {
+            skip?: number;
+            take?: number;
+            action?: AuditAction;
+        },
+    ): Promise<{ data: any[]; total: number }>;
     createContractWithAudit(
         data: CreateContractDto,
         initialStatus: ContractStatus,
@@ -27,6 +35,8 @@ export interface IContractRepository {
     }): Promise<{ data: any[]; total: number }>;
     findContractsExpiringSoon(days: number): Promise<Contract[]>;
     markContractAsExpiringAndNotify(contractId: string, daysRemaining: number): Promise<void>;
+    findExpiredActiveContracts(): Promise<Contract[]>;
+    markContractAsExpiredAndNotify(contractId: string): Promise<void>;
     getDashboardStats(): Promise<{
         total: number;
         byStatus: any[];

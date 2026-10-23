@@ -3,11 +3,28 @@ import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { PrismaService } from '../../../../infrastructure/database/prisma.service.js';
 
+const extractJwtFromAny = (req: any) => {
+    if (!req) return null;
+    const authHeader = req.headers?.authorization;
+    if (authHeader && authHeader.toLowerCase().startsWith('bearer ')) {
+        return authHeader.substring(7).trim();
+    }
+    if (req.query?.token) {
+        return String(req.query.token);
+    }
+    try {
+        const urlObj = new URL(req.url, 'http://localhost');
+        const tokenParam = urlObj.searchParams.get('token');
+        if (tokenParam) return tokenParam;
+    } catch { }
+    return null;
+};
+
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
     constructor(private readonly prisma: PrismaService) {
         super({
-            jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(), // ดึง Token จาก Header: Authorization Bearer ...
+            jwtFromRequest: extractJwtFromAny,
             ignoreExpiration: false, // ปฏิเสธ Token ที่หมดอายุ
             secretOrKey: process.env.JWT_SECRET || 'super_secret_key_legal_contract_management_system_2026',
         });

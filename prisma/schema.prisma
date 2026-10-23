@@ -45,6 +45,12 @@ enum AuditAction {
   DOWNLOAD_ATTACHMENT
   DELETE_ATTACHMENT
   USER_PERMISSION_CHANGE
+  CREATE_LEGAL_DOCUMENT
+  UPDATE_LEGAL_DOCUMENT
+  DELETE_LEGAL_DOCUMENT
+  CREATE_LEGAL_CASE
+  UPDATE_LEGAL_CASE
+  DELETE_LEGAL_CASE
 }
 
 /// สถานะของการแจ้งปัญหา/ปรับปรุงระบบ (ข้อ 6)
@@ -61,6 +67,43 @@ enum TicketPriority {
   MEDIUM
   HIGH
   URGENT
+}
+
+/// ສະຖານະນິຕິກຳ (Dashboard Card: Active / Inactive)
+enum DocumentStatus {
+  ACTIVE   // ຍັງນໍາໃຊ້
+  INACTIVE // ຍົກເລີກ / ບໍ່ໄດ້ໃຊ້
+}
+
+/// ປະເພດນິຕິກຳ (Donut Chart: ສັດສ່ວນປະເພດນິຕິກຳ)
+enum DocumentType {
+  REGULATION   // ລະບຽບການ / ກົດລະບຽບ
+  PROVISION    // ຂໍ້ກຳນົດ
+  AGREEMENT    // ຂໍ້ຕົກລົງ
+  NOTIFICATION // ແຈ້ງການ
+  INSTRUCTION  // ຄໍາແນະນໍາ
+  PROPOSAL     // ໜັງສືສະເໜີ
+  CONTRACT     // ສັນຍາ
+  MANUAL       // ປຶ້ມຄູ່ມື
+  OTHER        // ອື່ນໆ
+}
+
+/// ປະເພດຄະດີ (Dropdown)
+enum CaseType {
+  COMMERCIAL     // ການຄ້າ
+  CIVIL          // ຄະດີແພ່ງ
+  CRIMINAL       // ຄະດີອາຍາ
+  ADMINISTRATIVE // ບໍລິຫານ
+  OTHER          // ອື່ນໆ
+}
+
+/// ສະຖານະຄະດີ (Donut Chart: ສະຖານະຄະດີ)
+enum DisputeStatus {
+  FIRST_INSTANCE // ສານຂັ້ນຕົ້ນ (In Progress)
+  APPEAL         // ສານຂັ້ນອຸທອນ (In Progress)
+  SUPREME        // ຂັ້ນລົບລ້າງ (In Progress)
+  CLOSED         // ຈົບຄະດີ (Resolved)
+  RESOLVED       // ສໍາເລັດ (Resolved)
 }
 
 // ==========================================
@@ -96,7 +139,7 @@ model User {
   updatedAt   DateTime  @updatedAt @map("updated_at") @db.Timestamptz()
   deletedAt   DateTime? @map("deleted_at") @db.Timestamptz() // รองรับ Soft Delete เวลาลบบัญชี User
 
-  // Relations
+  // Relations - Contracts & System
   createdContracts      Contract[]             @relation("ContractCreator")
   updatedContracts      Contract[]             @relation("ContractUpdater")
   uploadedAttachments   ContractAttachment[]   @relation("AttachmentUploader")
@@ -106,12 +149,39 @@ model User {
   createdSupportTickets SupportTicket[]        @relation("TicketReporter")
   assignedTickets       SupportTicket[]        @relation("TicketAssignee")
 
+  // Relations - Legal Documents & Legal Cases
+  createdLegalDocuments       LegalDocument[]      @relation("LegalDocumentCreator")
+  updatedLegalDocuments       LegalDocument[]      @relation("LegalDocumentUpdater")
+  uploadedDocumentAttachments DocumentAttachment[] @relation("DocumentAttachmentUploader")
+  createdLegalCases           LegalCase[]          @relation("LegalCaseCreator")
+  updatedLegalCases           LegalCase[]          @relation("LegalCaseUpdater")
+  uploadedCaseAttachments     CaseAttachment[]     @relation("CaseAttachmentUploader")
+
   @@index([role, isActive])
   @@map("users")
 }
 
 // ==========================================
-// 3. CONTRACT MANAGEMENT (ข้อมูลสัญญา 14 ประเภท)
+// 3. MASTER DATA (ຫ້ອງການ / ຝ່າຍ / ສະຖາບັນ ຂອງ ຟຟລ)
+// ==========================================
+
+/// ຕາຕະລາງ ຫ້ອງການ/ຝ່າຍ/ສະຖາບັນ ຂອງ ຟຟລ (ສໍາລັບ Bar Chart ແຍກຕາມຝ່າຍ)
+model Department {
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String   @unique
+  code      String?  @unique
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz()
+
+  legalDocuments LegalDocument[]
+  legalCases     LegalCase[]
+
+  @@map("departments")
+}
+
+// ==========================================
+// 4. CONTRACT MANAGEMENT (ข้อมูลสัญญา 14 ประเภท)
 // ==========================================
 
 /// ตารางประเภทสัญญา (รองรับ 14 ประเภทหลักตามเอกสาร และเพิ่มในอนาคตได้)
@@ -203,7 +273,7 @@ model Contract {
 }
 
 // ==========================================
-// 4. ATTACHMENTS & DOWNLOAD SECURITY (ข้อ 3 และ ข้อ 5)
+// 5. ATTACHMENTS & DOWNLOAD SECURITY (ข้อ 3 และ ข้อ 5)
 // ==========================================
 
 /// ตารางเก็บไฟล์เอกสารสัญญาที่อัปโหลดเข้าระบบ
@@ -251,7 +321,7 @@ model ContractDownloadLog {
 }
 
 // ==========================================
-// 5. NOTIFICATIONS (ข้อ 1: แจ้งเตือนก่อนสัญญาสิ้นสุด 60 วัน)
+// 6. NOTIFICATIONS (ข้อ 1: แจ้งเตือนก่อนสัญญาสิ้นสุด 60 วัน)
 // ==========================================
 
 /// ตารางแจ้งเตือนในระบบเมื่อสัญญาใกล้ครบกำหนด 60 วัน (หรือครบกำหนดแล้ว)
@@ -275,7 +345,7 @@ model ContractNotification {
 }
 
 // ==========================================
-// 6. SUPPORT & CONTACT CHANNEL (ข้อ 6: ช่องทางติดต่อแจ้งปรับปรุง/แก้ไขปัญหา)
+// 7. SUPPORT & CONTACT CHANNEL (ข้อ 6: ช่องทางติดต่อแจ้งปรับปรุง/แก้ไขปัญหา)
 // ==========================================
 
 /// ตารางแสดงข้อมูลช่องทางติดต่อผู้ดูแลระบบ (เบอร์โทร, อีเมล, WhatsApp, Line ฯลฯ)
@@ -317,7 +387,7 @@ model SupportTicket {
 }
 
 // ==========================================
-// 7. AUDIT LOG (ประวัติการใช้งานระบบทั้งหมด)
+// 8. AUDIT LOG (ประวัติการใช้งานระบบทั้งหมด)
 // ==========================================
 
 model AuditLog {
@@ -336,4 +406,134 @@ model AuditLog {
   @@index([contractId])
   @@index([userId, createdAt])
   @@map("audit_logs")
+}
+
+// ==========================================
+// 9. LEGAL DOCUMENT SYSTEM (ລະບົບຄຸ້ມຄອງ ແລະ ຕິດຕາມນິຕິກຳ)
+// ==========================================
+
+model LegalDocument {
+  id                String               @id @default(uuid()) @db.Uuid
+  docTitle          String               @map("doc_title")
+  docType           DocumentType         @map("doc_type")
+  issueYear         Int                  @map("issue_year")
+  docNumberDate     String               @map("doc_number_date")
+  status            DocumentStatus       @default(ACTIVE)
+  responsiblePerson String?              @map("responsible_person")
+  departmentId      String               @map("department_id") @db.Uuid
+  department        Department           @relation(fields: [departmentId], references: [id], onDelete: Restrict)
+  purpose           String?
+  externalUrl       String?              @map("external_url")
+  attachments       DocumentAttachment[]
+
+  createdById       String?              @map("created_by_id") @db.Uuid
+  createdBy         User?                @relation("LegalDocumentCreator", fields: [createdById], references: [id])
+  updatedById       String?              @map("updated_by_id") @db.Uuid
+  updatedBy         User?                @relation("LegalDocumentUpdater", fields: [updatedById], references: [id])
+
+  createdAt         DateTime             @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt         DateTime             @updatedAt @map("updated_at") @db.Timestamptz()
+  deletedAt         DateTime?            @map("deleted_at") @db.Timestamptz()
+
+  @@index([docTitle])
+  @@index([docNumberDate])
+  @@index([docType])
+  @@index([status])
+  @@index([issueYear])
+  @@index([departmentId])
+  @@index([deletedAt])
+  @@map("legal_documents")
+}
+
+/// ຕາຕະລາງເກັບໄຟລ໌ເອກະສານແນບຂອງນິຕິກຳ (ຮອງຮັບການເລືອກຫຼາຍໄຟລ໌)
+model DocumentAttachment {
+  id              String        @id @default(uuid()) @db.Uuid
+  legalDocumentId String        @map("legal_document_id") @db.Uuid
+  legalDocument   LegalDocument @relation(fields: [legalDocumentId], references: [id], onDelete: Cascade)
+
+  fileName        String        @map("file_name")
+  fileUrl         String        @map("file_url")
+  fileType        String?       @map("file_type")
+  fileSize        Int?          @map("file_size")
+
+  uploadedById    String?       @map("uploaded_by_id") @db.Uuid
+  uploadedBy      User?         @relation("DocumentAttachmentUploader", fields: [uploadedById], references: [id])
+
+  createdAt       DateTime      @default(now()) @map("created_at") @db.Timestamptz()
+  deletedAt       DateTime?     @map("deleted_at") @db.Timestamptz()
+
+  @@index([legalDocumentId])
+  @@map("document_attachments")
+}
+
+// ==========================================
+// 10. LEGAL CASE MANAGEMENT SYSTEM (ລະບົບຄຸ້ມຄອງ ແລະ ຕິດຕາມຄະດີ)
+// ==========================================
+
+model LegalCase {
+  internalId       String           @id @default(uuid()) @map("internal_id") @db.Uuid
+  caseCode         String           @unique @map("id") // ລະຫັດຄະດີ (ຕົວຢ່າງ: EDL-2026-005, LAW-0012)
+  defendant        String           // ຊື່ຈໍາເລີຍ ຫຼື ຫົວຂໍ້ຄະດີ
+  allegation       String?          // ຂໍ້ກ່າວຫາ / ເນື້ອໃນຫຍໍ້
+  departmentId     String?          @map("department_id") @db.Uuid
+  department       Department?      @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  departmentAction String?          @map("department_action")
+  caseType         CaseType         @map("case_type")
+
+  // ມູນຄ່າທາງການເງິນ (LAK / USD)
+  damageLak        Decimal          @default(0) @map("damage_lak") @db.Decimal(20, 2)
+  damageUsd        Decimal          @default(0) @map("damage_usd") @db.Decimal(20, 2)
+  fineLak          Decimal          @default(0) @map("fine_lak") @db.Decimal(20, 2)
+  fineUsd          Decimal          @default(0) @map("fine_usd") @db.Decimal(20, 2)
+  totalDueLak      Decimal          @default(0) @map("total_due_lak") @db.Decimal(20, 2)
+  totalDueUsd      Decimal          @default(0) @map("total_due_usd") @db.Decimal(20, 2)
+
+  disputeStatus    DisputeStatus    @default(FIRST_INSTANCE) @map("dispute_status")
+  recoveredLak     Decimal          @default(0) @map("recovered_lak") @db.Decimal(20, 2)
+  recoveredUsd     Decimal          @default(0) @map("recovered_usd") @db.Decimal(20, 2)
+
+  // ວັນທີເລີ່ມຕົ້ນຄະດີ (YYYY-MM-DD)
+  date             DateTime         @db.Date
+  disputeProgress  String?          @map("dispute_progress")
+  externalUrl      String?          @map("external_url")
+  attachments      CaseAttachment[]
+
+  createdById      String?          @map("created_by_id") @db.Uuid
+  createdBy        User?            @relation("LegalCaseCreator", fields: [createdById], references: [id])
+  updatedById      String?          @map("updated_by_id") @db.Uuid
+  updatedBy        User?            @relation("LegalCaseUpdater", fields: [updatedById], references: [id])
+
+  createdAt        DateTime         @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt        DateTime         @updatedAt @map("updated_at") @db.Timestamptz()
+  deletedAt        DateTime?        @map("deleted_at") @db.Timestamptz()
+
+  @@index([caseCode])
+  @@index([defendant])
+  @@index([caseType])
+  @@index([disputeStatus])
+  @@index([date])
+  @@index([departmentId])
+  @@index([deletedAt])
+  @@map("legal_cases")
+}
+
+/// ຕາຕະລາງເກັບໄຟລ໌ເອກະສານແນບຂອງຄະດີ
+model CaseAttachment {
+  id           String    @id @default(uuid()) @db.Uuid
+  legalCaseId  String    @map("legal_case_id") @db.Uuid
+  legalCase    LegalCase @relation(fields: [legalCaseId], references: [internalId], onDelete: Cascade)
+
+  fileName     String    @map("file_name")
+  fileUrl      String    @map("file_url")
+  fileType     String?   @map("file_type")
+  fileSize     Int?      @map("file_size")
+
+  uploadedById String?   @map("uploaded_by_id") @db.Uuid
+  uploadedBy   User?     @relation("CaseAttachmentUploader", fields: [uploadedById], references: [id])
+
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz()
+  deletedAt    DateTime? @map("deleted_at") @db.Timestamptz()
+
+  @@index([legalCaseId])
+  @@map("case_attachments")
 }

@@ -25,6 +25,11 @@ export class UpdateContractDto {
     @IsString()
     durationText?: string;
 
+    @ApiPropertyOptional({ description: 'ຈຳນວນເດືອນອາຍຸສັນຍາ (ຕົວເລກ, ຕົວຢ່າງ: 60)' })
+    @IsOptional()
+    @IsInt()
+    durationMonths?: number;
+
     @ApiPropertyOptional({ description: 'ມື້ລົງລາຍເຊັນ' })
     @IsOptional()
     @Type(() => Date)
@@ -57,6 +62,11 @@ export class UpdateContractDto {
     @IsOptional()
     @IsString()
     equityOrCapitalContribution?: string;
+
+    @ApiPropertyOptional({ description: 'ເປີເຊັນຫຸ້ນ (ຕົວຢ່າງ: 51.5)' })
+    @IsOptional()
+    @IsNumber()
+    sharePercentage?: number;
 
     @ApiPropertyOptional({ description: 'ຜູ້ຈັດຕັ້ງປະຕິບັດ' })
     @IsOptional()

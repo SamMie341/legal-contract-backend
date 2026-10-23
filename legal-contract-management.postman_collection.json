@@ -18,7 +18,7 @@
   "variable": [
     {
       "key": "baseUrl",
-      "value": "http://localhost:3000/api",
+      "value": "http://localhost:3001/api",
       "type": "string"
     },
     {
@@ -32,12 +32,37 @@
       "type": "string"
     },
     {
+      "key": "departmentId",
+      "value": "",
+      "type": "string"
+    },
+    {
       "key": "contractId",
       "value": "",
       "type": "string"
     },
     {
       "key": "attachmentId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "legalDocId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "docAttachmentId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "legalCaseId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "caseAttachmentId",
       "value": "",
       "type": "string"
     },
@@ -329,6 +354,205 @@
       ]
     },
     {
+      "name": "03. Departments (ຫ້ອງການ/ຝ່າຍ CRUD, Sync HRM & Dropdown)",
+      "item": [
+        {
+          "name": "Preview HRM Departments (GET /departments/hrm)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/departments/hrm",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "departments",
+                "hrm"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Sync Departments from HRM (GET /departments/sync)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/departments/sync",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "departments",
+                "sync"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Sync Departments from HRM (POST /departments/sync)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/departments/sync",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "departments",
+                "sync"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Departments Dropdown (GET /departments/dropdown)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/departments/dropdown",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "departments",
+                "dropdown"
+              ]
+            }
+          }
+        },
+        {
+          "name": "List Departments (GET /departments)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/departments?search=&isActive=true",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "departments"
+              ],
+              "query": [
+                {
+                  "key": "search",
+                  "value": ""
+                },
+                {
+                  "key": "isActive",
+                  "value": "true"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Department by ID (GET /departments/:id)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/departments/{{departmentId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "departments",
+                "{{departmentId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Department (POST /departments)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const jsonData = pm.response.json();",
+                  "if (jsonData.data && jsonData.data.id) {",
+                  "    pm.collectionVariables.set(\"departmentId\", String(jsonData.data.id));",
+                  "    pm.environment.set(\"departmentId\", String(jsonData.data.id));",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"ຝ່າຍກົດໝາຍ ແລະ ນິຕິກຳ\",\n  \"code\": \"LEGAL-DIV\",\n  \"isActive\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/departments",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "departments"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Department (PATCH /departments/:id)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"ຝ່າຍກົດໝາຍ ແລະ ນິຕິກຳ (ປັບປຸງ)\",\n  \"code\": \"LEGAL-DIV-UPDATED\",\n  \"isActive\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/departments/{{departmentId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "departments",
+                "{{departmentId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delete Department (DELETE /departments/:id)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/departments/{{departmentId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "departments",
+                "{{departmentId}}"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
       "name": "03. Contracts (ການຈັດການສັນຍາ)",
       "item": [
         {
@@ -400,6 +624,41 @@
           }
         },
         {
+          "name": "Get Contract Edit History (GET /contracts/:id/history)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/contracts/{{contractId}}/history?page=1&limit=10&action=UPDATE_CONTRACT",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "contracts",
+                "{{contractId}}",
+                "history"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "ເລກໜ້າ"
+                },
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "description": "ຈຳນວນລາຍການຕໍ່ໜ້າ"
+                },
+                {
+                  "key": "action",
+                  "value": "UPDATE_CONTRACT",
+                  "description": "ກັ່ນຕອງປະເພດການດຳເນີນງານ (UPDATE_CONTRACT, CREATE_CONTRACT, UPLOAD_ATTACHMENT, DELETE_ATTACHMENT)"
+                }
+              ]
+            }
+          }
+        },
+        {
           "name": "Create Contract (POST /contracts)",
           "event": [
             {
@@ -451,7 +710,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"title\": \"ສັນຍາ ບໍລິການ O&M ລະບົບສາຍສົ່ງ 230kV (ສະບັບປັບປຸງ)\",\n  \"contractValue\": 5500000000,\n  \"additionalDetails\": \"ເພີ່ມມູນຄ່າ ແລະ ຂອບເຂດການບໍລິການ\"\n}"
+              "raw": "{\n  \"title\": \"ສັນຍາ ບໍລິການ O&M ລະບົບສາຍສົ່ງ 230kV (ສະບັບປັບປຸງ)\",\n  \"durationMonths\": 60,\n  \"contractValue\": 5500000000,\n  \"sharePercentage\": 51.5,\n  \"additionalDetails\": \"ເພີ່ມມູນຄ່າ ແລະ ຂອບເຂດການບໍລິການ\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/contracts/{{contractId}}",
@@ -549,6 +808,25 @@
           }
         },
         {
+          "name": "Preview Attachment Inline (GET /contracts/attachments/:attachmentId/preview)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/contracts/attachments/{{attachmentId}}/preview",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "contracts",
+                "attachments",
+                "{{attachmentId}}",
+                "preview"
+              ]
+            }
+          }
+        },
+        {
           "name": "Download Attachment (GET /contracts/attachments/:attachmentId/download)",
           "request": {
             "method": "GET",
@@ -581,6 +859,591 @@
                 "contracts",
                 "attachments",
                 "{{attachmentId}}"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "06. Legal Documents (ລະບົບຄຸ້ມຄອງ ແລະ ຕິດຕາມນິຕິກຳ)",
+      "item": [
+        {
+          "name": "Get Dashboard Stats (GET /legal-documents/dashboard)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/legal-documents/dashboard",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "legal-documents",
+                "dashboard"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Legal Documents List (GET /legal-documents)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/legal-documents?page=1&limit=10",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "legal-documents"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "docType",
+                  "value": "REGULATION",
+                  "disabled": true
+                },
+                {
+                  "key": "status",
+                  "value": "ACTIVE",
+                  "disabled": true
+                },
+                {
+                  "key": "issueYear",
+                  "value": "2026",
+                  "disabled": true
+                },
+                {
+                  "key": "departmentId",
+                  "value": "{{departmentId}}",
+                  "disabled": true
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Legal Document by ID (GET /legal-documents/:id)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/legal-documents/{{legalDocId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "legal-documents",
+                "{{legalDocId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Legal Document (POST /legal-documents)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.data && jsonData.data.id) {",
+                  "    pm.collectionVariables.set(\"legalDocId\", String(jsonData.data.id));",
+                  "    pm.environment.set(\"legalDocId\", String(jsonData.data.id));",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"docTitle\": \"ກົດລະບຽບວ່າດ້ວຍການຄຸ້ມຄອງພະນັກງານ ໄຟຟ້າລາວ\",\n  \"docType\": \"REGULATION\",\n  \"issueYear\": 2026,\n  \"docNumberDate\": \"ເລກທີ 012/ຟຟລ, ລົງວັນທີ 15/01/2026\",\n  \"status\": \"ACTIVE\",\n  \"responsiblePerson\": \"ທ່ານ ສົມສັກ ວົງສາ\",\n  \"departmentId\": \"{{departmentId}}\",\n  \"purpose\": \"ເພື່ອກຳນົດຫຼັກການ ແລະ ລະບຽບການໃນການຄຸ້ມຄອງພະນັກງານ ຟຟລ\",\n  \"externalUrl\": \"https://sharepoint.edl.com.la/docs/reg-012\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/legal-documents",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "legal-documents"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Legal Document (PATCH /legal-documents/:id)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"docTitle\": \"ກົດລະບຽບວ່າດ້ວຍການຄຸ້ມຄອງພະນັກງານ ໄຟຟ້າລາວ (ສະບັບປັບປຸງ)\",\n  \"status\": \"ACTIVE\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/legal-documents/{{legalDocId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "legal-documents",
+                "{{legalDocId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Legal Document Attachments (GET /legal-documents/:id/attachments)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/legal-documents/{{legalDocId}}/attachments",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "legal-documents",
+                "{{legalDocId}}",
+                "attachments"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Upload Legal Document Attachment (POST /legal-documents/:id/attachments)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.data && jsonData.data.id) {",
+                  "    pm.collectionVariables.set(\"docAttachmentId\", String(jsonData.data.id));",
+                  "    pm.environment.set(\"docAttachmentId\", String(jsonData.data.id));",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": []
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/legal-documents/{{legalDocId}}/attachments",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "legal-documents",
+                "{{legalDocId}}",
+                "attachments"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Preview Legal Document Attachment (GET /legal-documents/attachments/:attachmentId/preview)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/legal-documents/attachments/{{docAttachmentId}}/preview",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "legal-documents",
+                "attachments",
+                "{{docAttachmentId}}",
+                "preview"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Download Legal Document Attachment (GET /legal-documents/attachments/:attachmentId/download)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/legal-documents/attachments/{{docAttachmentId}}/download",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "legal-documents",
+                "attachments",
+                "{{docAttachmentId}}",
+                "download"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delete Legal Document Attachment (DELETE /legal-documents/attachments/:attachmentId)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/legal-documents/attachments/{{docAttachmentId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "legal-documents",
+                "attachments",
+                "{{docAttachmentId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delete Legal Document (DELETE /legal-documents/:id)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/legal-documents/{{legalDocId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "legal-documents",
+                "{{legalDocId}}"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "07. Legal Cases (ລະບົບຄຸ້ມຄອງ ແລະ ຕິດຕາມຄະດີ / ຂໍ້ຂັດແຍ່ງ)",
+      "item": [
+        {
+          "name": "Get Dashboard Stats (GET /legal-cases/dashboard)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/legal-cases/dashboard",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "legal-cases",
+                "dashboard"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Legal Cases List (GET /legal-cases)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/legal-cases?page=1&limit=10",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "legal-cases"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "caseType",
+                  "value": "COMMERCIAL",
+                  "disabled": true
+                },
+                {
+                  "key": "disputeStatus",
+                  "value": "FIRST_INSTANCE",
+                  "disabled": true
+                },
+                {
+                  "key": "departmentId",
+                  "value": "{{departmentId}}",
+                  "disabled": true
+                },
+                {
+                  "key": "startDate",
+                  "value": "2026-01-01",
+                  "disabled": true
+                },
+                {
+                  "key": "endDate",
+                  "value": "2026-12-31",
+                  "disabled": true
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Legal Case by ID or Code (GET /legal-cases/:id)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/legal-cases/{{legalCaseId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "legal-cases",
+                "{{legalCaseId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Legal Case (POST /legal-cases)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.data && jsonData.data.internalId) {",
+                  "    pm.collectionVariables.set(\"legalCaseId\", String(jsonData.data.internalId));",
+                  "    pm.environment.set(\"legalCaseId\", String(jsonData.data.internalId));",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"caseCode\": \"EDL-2026-005\",\n  \"defendant\": \"ບໍລິສັດ ບົວລະພາ ກໍ່ສ້າງ ຈຳກັດ\",\n  \"allegation\": \"ລະເມີດສັນຍາຮັບເໝົາກໍ່ສ້າງ ແລະ ບໍ່ມອບວຽກຕາມກຳນົດ\",\n  \"departmentId\": \"{{departmentId}}\",\n  \"departmentAction\": \"ສົ່ງເອກະສານໃຫ້ພະແນກນິຕິກຳດຳເນີນຄະດີ\",\n  \"caseType\": \"COMMERCIAL\",\n  \"damageLak\": 500000000,\n  \"damageUsd\": 25000,\n  \"fineLak\": 50000000,\n  \"fineUsd\": 2500,\n  \"disputeStatus\": \"FIRST_INSTANCE\",\n  \"recoveredLak\": 100000000,\n  \"recoveredUsd\": 5000,\n  \"date\": \"2026-01-15\",\n  \"disputeProgress\": \"ສານຂັ້ນຕົ້ນກຳລັງໄຕ່ສວນພະຍານ\",\n  \"externalUrl\": \"https://sharepoint.edl.com.la/cases/005\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/legal-cases",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "legal-cases"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Legal Case (PATCH /legal-cases/:id)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"disputeStatus\": \"APPEAL\",\n  \"disputeProgress\": \"ຍື່ນອຸທອນຕໍ່ສານຂັ້ນອຸທອນແລ້ວ\",\n  \"recoveredLak\": 200000000\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/legal-cases/{{legalCaseId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "legal-cases",
+                "{{legalCaseId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Legal Case Attachments (GET /legal-cases/:id/attachments)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/legal-cases/{{legalCaseId}}/attachments",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "legal-cases",
+                "{{legalCaseId}}",
+                "attachments"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Upload Case Attachment (POST /legal-cases/:id/attachments)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.data && jsonData.data.id) {",
+                  "    pm.collectionVariables.set(\"caseAttachmentId\", String(jsonData.data.id));",
+                  "    pm.environment.set(\"caseAttachmentId\", String(jsonData.data.id));",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": []
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/legal-cases/{{legalCaseId}}/attachments",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "legal-cases",
+                "{{legalCaseId}}",
+                "attachments"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Preview Case Attachment (GET /legal-cases/attachments/:attachmentId/preview)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/legal-cases/attachments/{{caseAttachmentId}}/preview",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "legal-cases",
+                "attachments",
+                "{{caseAttachmentId}}",
+                "preview"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Download Case Attachment (GET /legal-cases/attachments/:attachmentId/download)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/legal-cases/attachments/{{caseAttachmentId}}/download",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "legal-cases",
+                "attachments",
+                "{{caseAttachmentId}}",
+                "download"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delete Case Attachment (DELETE /legal-cases/attachments/:attachmentId)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/legal-cases/attachments/{{caseAttachmentId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "legal-cases",
+                "attachments",
+                "{{caseAttachmentId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delete Legal Case (DELETE /legal-cases/:id)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/legal-cases/{{legalCaseId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "legal-cases",
+                "{{legalCaseId}}"
               ]
             }
           }
@@ -960,6 +1823,25 @@
                 "support",
                 "tickets",
                 "{{ticketId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Support Ticket Attachment (GET /support/tickets/:id/attachment)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/support/tickets/{{ticketId}}/attachment",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "support",
+                "tickets",
+                "{{ticketId}}",
+                "attachment"
               ]
             }
           }

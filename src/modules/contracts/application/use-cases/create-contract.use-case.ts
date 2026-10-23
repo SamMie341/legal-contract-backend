@@ -1,7 +1,7 @@
-import { Injectable, Inject, BadRequestException } from '@nestjs/common';
+import { Injectable, Inject, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { CreateContractDto } from '../dto/create-contract.dto.js';
 import * as contractRepositoryInterface from '../../domain/repositories/contract.repository.interface.js';
-import { ContractStatus } from '@prisma/client';
+import { ContractStatus, UserRole } from '@prisma/client';
 
 @Injectable()
 export class CreateContractUseCase {
@@ -10,7 +10,20 @@ export class CreateContractUseCase {
         private readonly contractRepository: contractRepositoryInterface.IContractRepository,
     ) { }
 
-    async execute(dto: CreateContractDto, userId: string) {
+    async execute(dto: CreateContractDto, user: any) {
+        // 0. ตรวจสอบสิทธิ์การสร้าง/อัปโหลดสัญญา (Admin, Main User หรือผู้มีสิทธิ์ canUpload)
+        const isObjectUser = typeof user === 'object' && user !== null;
+        if (isObjectUser) {
+            const canUpload =
+                user.role === UserRole.ADMIN ||
+                user.role === UserRole.MAIN_USER ||
+                user.canUpload === true;
+            if (!canUpload) {
+                throw new ForbiddenException('ທ່ານບໍ່ມີສິດສ້າງ ຫຼື ອັບໂຫຼດສັນຍາ (Permission Denied: canUpload required)');
+            }
+        }
+        const userId = isObjectUser ? user.userId : user;
+
         // 1. ตรวจสอบประเภทสัญญา
         const contractType = await this.contractRepository.findContractTypeById(dto.contractTypeId);
 

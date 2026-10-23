@@ -3,7 +3,7 @@ import { PrismaService } from '../../../../infrastructure/database/prisma.servic
 import { IContractRepository } from '../../domain/repositories/contract.repository.interface.js';
 import { CreateContractDto } from '../../application/dto/create-contract.dto.js';
 import { UpdateContractDto } from '../../application/dto/update-contract.dto.js';
-import { Contract, ContractType, ContractStatus } from '@prisma/client';
+import { Contract, ContractType, ContractStatus, AuditAction } from '@prisma/client';
 
 @Injectable()
 export class ContractRepository implements IContractRepository {
@@ -36,7 +36,17 @@ export class ContractRepository implements IContractRepository {
                 auditLogs: {
                     take: 20,
                     orderBy: { createdAt: 'desc' },
-                    include: { user: { select: { fullName: true, employeeCode: true } } },
+                    include: {
+                        user: {
+                            select: {
+                                id: true,
+                                fullName: true,
+                                employeeCode: true,
+                                department: true,
+                                role: true,
+                            },
+                        },
+                    },
                 },
             },
         });
@@ -54,12 +64,14 @@ export class ContractRepository implements IContractRepository {
                     contractTypeId: dto.contractTypeId,
                     contractNumber: dto.contractNumber,
                     durationText: dto.durationText,
+                    durationMonths: dto.durationMonths,
                     signedDate: dto.signedDate,
                     effectiveDate: dto.effectiveDate,
                     expirationDate: dto.expirationDate,
                     contractValue: dto.contractValue,
                     currency: dto.currency || 'LAK',
                     equityOrCapitalContribution: dto.equityOrCapitalContribution,
+                    sharePercentage: dto.sharePercentage,
                     implementer: dto.implementer,
                     additionalDetails: dto.additionalDetails,
                     notifyDaysBefore: dto.notifyDaysBefore || 60,
@@ -93,21 +105,60 @@ export class ContractRepository implements IContractRepository {
         return this.prisma.$transaction(async (tx) => {
             const oldContract = await tx.contract.findFirst({
                 where: { id, deletedAt: null },
+                include: {
+                    contractType: true,
+                },
             });
 
             if (!oldContract) {
                 throw new NotFoundException('ບໍ່ພົບສັນຍານີ້ໃນລະບົບ (Contract not found)');
             }
 
+            // คำนวณสถานะใหม่และรีเซ็ตการแจ้งเตือนอัตโนมัติหากมีการแก้ไขวันมีผลบังคับใช้หรือวันสิ้นสุดสัญญา
+            const updateData: any = {
+                ...dto,
+                updatedById: userId,
+            };
+
+            if ((dto.effectiveDate !== undefined || dto.expirationDate !== undefined) && !dto.status) {
+                const now = new Date();
+                const effectiveDate = dto.effectiveDate !== undefined ? dto.effectiveDate : oldContract.effectiveDate;
+                const expirationDate = dto.expirationDate !== undefined ? dto.expirationDate : oldContract.expirationDate;
+                const notifyDays = dto.notifyDaysBefore ?? oldContract.notifyDaysBefore ?? 60;
+
+                if (effectiveDate && new Date(effectiveDate) > now) {
+                    updateData.status = ContractStatus.DRAFT;
+                } else if (expirationDate) {
+                    const expireDate = new Date(expirationDate);
+                    const daysToExpiry = Math.ceil((expireDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+                    if (daysToExpiry <= 0) {
+                        updateData.status = ContractStatus.EXPIRED;
+                    } else if (daysToExpiry <= notifyDays) {
+                        updateData.status = ContractStatus.EXPIRING_SOON;
+                    } else {
+                        updateData.status = ContractStatus.ACTIVE;
+                        updateData.isExpiryNotified = false;
+                    }
+                } else {
+                    updateData.status = ContractStatus.ACTIVE;
+                    updateData.isExpiryNotified = false;
+                }
+            }
+
             const updatedContract = await tx.contract.update({
                 where: { id },
-                data: {
-                    ...dto,
-                    updatedById: userId,
-                },
+                data: updateData,
                 include: {
                     contractType: true,
-                    updatedBy: { select: { id: true, fullName: true, employeeCode: true } },
+                    updatedBy: {
+                        select: {
+                            id: true,
+                            fullName: true,
+                            employeeCode: true,
+                            department: true,
+                            role: true,
+                        },
+                    },
                 },
             });
 
@@ -123,6 +174,39 @@ export class ContractRepository implements IContractRepository {
 
             return updatedContract;
         });
+    }
+
+    async getContractHistory(
+        contractId: string,
+        params?: { skip?: number; take?: number; action?: AuditAction },
+    ): Promise<{ data: any[]; total: number }> {
+        const where: any = { contractId };
+        if (params?.action) {
+            where.action = params.action;
+        }
+
+        const [data, total] = await Promise.all([
+            this.prisma.auditLog.findMany({
+                where,
+                skip: params?.skip ?? 0,
+                take: params?.take ?? 10,
+                orderBy: { createdAt: 'desc' },
+                include: {
+                    user: {
+                        select: {
+                            id: true,
+                            fullName: true,
+                            employeeCode: true,
+                            department: true,
+                            role: true,
+                        },
+                    },
+                },
+            }),
+            this.prisma.auditLog.count({ where }),
+        ]);
+
+        return { data, total };
     }
 
     async deleteContractWithAudit(id: string, userId: string): Promise<void> {
@@ -213,6 +297,7 @@ export class ContractRepository implements IContractRepository {
                 deletedAt: null,
                 isExpiryNotified: false,
                 expirationDate: {
+                    gte: today,
                     lte: targetDate,
                     not: null,
                 },
@@ -239,6 +324,45 @@ export class ContractRepository implements IContractRepository {
                     title: 'ແຈ້ງເຕືອນ: ສັນຍາໃກ້ຈະສິ້ນສຸດ',
                     message: `ສັນຍາ "${contract!.title}" (ເລກທີ: ${contract!.contractNumber}) ຈະສິ້ນສຸດໃນອີກ ${daysRemaining} ວັນ.`,
                     daysRemaining: daysRemaining,
+                },
+            });
+        });
+    }
+
+    async findExpiredActiveContracts(): Promise<Contract[]> {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        return this.prisma.contract.findMany({
+            where: {
+                status: { in: [ContractStatus.ACTIVE, ContractStatus.EXPIRING_SOON] },
+                deletedAt: null,
+                expirationDate: {
+                    lt: today,
+                    not: null,
+                },
+            },
+        });
+    }
+
+    async markContractAsExpiredAndNotify(contractId: string): Promise<void> {
+        await this.prisma.$transaction(async (tx) => {
+            await tx.contract.update({
+                where: { id: contractId },
+                data: {
+                    status: ContractStatus.EXPIRED,
+                    lastNotifiedAt: new Date(),
+                },
+            });
+
+            const contract = await tx.contract.findUnique({ where: { id: contractId } });
+
+            await tx.contractNotification.create({
+                data: {
+                    contractId: contractId,
+                    title: 'ແຈ້ງເຕືອນ: ສັນຍາໝົດອາຍຸແລ້ວ',
+                    message: `ສັນຍາ "${contract!.title}" (ເລກທີ: ${contract!.contractNumber}) ໄດ້ສິ້ນສຸດອາຍຸສັນຍາແລ້ວ.`,
+                    daysRemaining: 0,
                 },
             });
         });

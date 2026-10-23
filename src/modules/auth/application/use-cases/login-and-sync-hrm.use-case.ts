@@ -44,7 +44,7 @@ export class LoginAndSyncHrmUseCase {
             division: divisionName,
             unit: unitName,
             position: positionName,
-            phone: hrmEmployee.phone,
+            phone: hrmEmployee.phone || '',
         });
 
         const payload = {

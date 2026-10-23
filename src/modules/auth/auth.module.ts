@@ -14,9 +14,12 @@ import { HRM_API_SERVICE } from './domain/interface/hrm-api.interface.js';
 
 @Module({
     imports: [
-        HttpModule.register({
-            timeout: 5000,
-            maxRedirects: 5,
+        HttpModule.registerAsync({
+            inject: [ConfigService],
+            useFactory: (config: ConfigService) => ({
+                timeout: Number(config.get('HRM_TIMEOUT')) || 30000,
+                maxRedirects: 5,
+            }),
         }),
         PassportModule,
         JwtModule.registerAsync({

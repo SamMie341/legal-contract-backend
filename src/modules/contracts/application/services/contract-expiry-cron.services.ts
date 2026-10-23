@@ -17,7 +17,18 @@ export class ContractExpiryCronService {
         this.logger.log('ເລີ່ມຕົ້ນກວດສອບສັນຍາໃກ້ໝົດອາຍຸ... (Checking expiring contracts...)');
 
         try {
-            const NOTIFY_DAYS = 60; // ແຈ້ງເຕືອນລ່ວງໜ້າ 60 ວັນ (ຕາມຂໍ້ກຳນົດໃນ Excel)
+            // 1. ກວດສອບສັນຍາທີ່ໝົດອາຍຸແລ້ວ (expirationDate < today) ເພື່ອປ່ຽນສະຖານະເປັນ EXPIRED
+            const expiredContracts = await this.contractRepository.findExpiredActiveContracts();
+            if (expiredContracts.length > 0) {
+                this.logger.log(`ພົບສັນຍາໝົດອາຍຸ ${expiredContracts.length} ສະບັບ.`);
+                for (const contract of expiredContracts) {
+                    await this.contractRepository.markContractAsExpiredAndNotify(contract.id);
+                    this.logger.log(`ປັບສະຖານະ EXPIRED ສຳລັບສັນຍາ ID: ${contract.id} ສຳເລັດ.`);
+                }
+            }
+
+            // 2. ກວດສອບສັນຍາໃກ້ໝົດອາຍຸລ່ວງໜ້າ 60 ວັນ (ຕາມຂໍ້ກຳນົດໃນ Excel ຂໍ້ 1)
+            const NOTIFY_DAYS = 60;
             const expiringContracts = await this.contractRepository.findContractsExpiringSoon(NOTIFY_DAYS);
 
             if (expiringContracts.length > 0) {

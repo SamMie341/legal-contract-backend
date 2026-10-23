@@ -1,4 +1,4 @@
-import { Controller, Get, Patch, Param, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Patch, Param, ParseUUIDPipe, Query, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../../core/guards/jwt-auth.guard.js';
 import { CurrentUser } from '../../../core/decorators/current-user.decorator.js';
@@ -34,7 +34,7 @@ export class NotificationsController {
 
     @ApiOperation({ summary: 'ໝາຍການແຈ້ງເຕືອນລາຍການໃດໜຶ່ງວ່າອ່ານແລ້ວ' })
     @Patch(':id/read')
-    async markAsRead(@Param('id') notificationId: string) {
+    async markAsRead(@Param('id', ParseUUIDPipe) notificationId: string) {
         return this.markReadUseCase.execute(notificationId);
     }
 }
