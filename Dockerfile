@@ -24,7 +24,10 @@ RUN npx prisma generate --config prisma7.config.ts \
 FROM node:24-alpine AS runner
 ENV NODE_ENV=production \
     PORT=3001 \
-    UPLOAD_DIR=/app/uploads/contracts
+    UPLOAD_DIR=/app/uploads/contracts \
+    UPLOAD_DIR_LEGAL_DOCS=/app/uploads/legal-documents \
+    UPLOAD_DIR_LEGAL_CASES=/app/uploads/legal-cases \
+    TICKET_UPLOAD_DIR=/app/uploads/tickets
 WORKDIR /app
 
 COPY package.json package-lock.json ./
@@ -35,7 +38,7 @@ COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=builder /app/dist ./dist
 
 # โฟลเดอร์เก็บไฟล์อัปโหลด (mount เป็น volume ตอนรัน)
-RUN mkdir -p /app/uploads/contracts && chown -R node:node /app
+RUN mkdir -p /app/uploads/contracts /app/uploads/legal-documents /app/uploads/legal-cases /app/uploads/tickets && chown -R node:node /app
 USER node
 
 EXPOSE 3001
