@@ -53,12 +53,19 @@ export class HrmApiService implements IHrmApiService {
 
             return token;
         } catch (error: any) {
-            if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
+            if (error.code === 'ECONNABORTED' || error.message?.includes('timeout') || error.code === 'ETIMEDOUT') {
                 throw new BadRequestException(
                     `HRM Login timed out (${this.timeoutMs}ms exceeded): ເຊີເວີ HRM ຕອບສະໜອງຊ້າ ກະລຸນາລອງໃໝ່ອີກຄັ້ງ`,
                 );
             }
-            throw new UnauthorizedException('HRM Login failed: Invalid credentials');
+            if (error.code === 'ECONNREFUSED' || error.code === 'ENETUNREACH' || error.code === 'EHOSTUNREACH') {
+                throw new BadRequestException(
+                    `ບໍ່ສາມາດເຊື່ອມຕໍ່ລະບົບ HRM ໄດ້ (${error.code}): ເຄືອຂ່າຍບໍ່ສາມາດເຂົ້າເຖິງ HRM server ໄດ້`,
+                );
+            }
+            throw new BadRequestException(
+                `HRM Login failed: ${error.response?.data?.message || error.message || 'Invalid credentials'}`,
+            );
         }
     }
 
