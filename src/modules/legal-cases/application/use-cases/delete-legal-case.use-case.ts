@@ -1,6 +1,7 @@
 import { Injectable, Inject, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { UserRole } from '@prisma/client';
 import * as repoInterface from '../../domain/repositories/legal-case.repository.interface.js';
+import { isDisputeResolutionDivision } from '../../../../core/utils/division-helper.util.js';
 
 @Injectable()
 export class DeleteLegalCaseUseCase {
@@ -12,12 +13,12 @@ export class DeleteLegalCaseUseCase {
     async execute(idOrCode: string, user: any) {
         const isObjectUser = typeof user === 'object' && user !== null;
         if (isObjectUser) {
+            const isDisputeDiv = isDisputeResolutionDivision(user.division);
             const canDelete =
                 user.role === UserRole.ADMIN ||
-                user.role === UserRole.MAIN_USER ||
-                user.canDelete === true;
+                (isDisputeDiv && (user.role === UserRole.MAIN_USER || user.canDelete === true));
             if (!canDelete) {
-                throw new ForbiddenException('ທ່ານບໍ່ມີສິດລົບບັນທຶກຄະດີ (Permission Denied: canDelete required)');
+                throw new ForbiddenException('ທ່ານບໍ່ມີສິດລົບບັນທຶກຄະດີ (ອະນຸຍາດສະເພາະ ພະແນກແກ້ໄຂຂໍ້ຂັດແຍ່ງ ແລະ ດຳເນີນຄະດີ)');
             }
         }
         const userId = isObjectUser ? user.userId : user;

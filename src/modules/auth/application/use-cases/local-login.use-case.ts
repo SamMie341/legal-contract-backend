@@ -3,6 +3,7 @@ import { JwtService } from '@nestjs/jwt';
 import { LoginDto } from '../dto/login.dto.js';
 import * as bcrypt from 'bcrypt';
 import * as authUserRepositoryInterface from '../../domain/repositories/auth-user.repository.interface.js';
+import { getAccessibleModules } from '../../../../core/utils/division-helper.util.js';
 
 @Injectable()
 export class LocalLoginUseCase {
@@ -13,11 +14,11 @@ export class LocalLoginUseCase {
     ) { }
 
     async execute(dto: LoginDto) {
-        // 1. ค้นหาผู้ใช้ในฐานข้อมูลของเรา (เช็คว่าผู้ใช้นี้เคยถูก Sync มาหรือยัง)
+        // 1. ค้นหาผู้ใช้ในฐานข้อมูลของเรา (ด้วย username หรือรหัสพนักงาน)
         const user = await this.authUserRepository.findByUsernameOrEmpCode(dto.username);
 
         if (!user) {
-            throw new UnauthorizedException('ບໍ່ພົບຜູ້ໃຊ້ນີ້ໃນລະບົບ ກະລຸນາເຂົ້າສູ່ລະບົບຜ່ານ HRM ກ່ອນ (User not found)');
+            throw new UnauthorizedException('ບໍ່ພົບຜູ້ໃຊ້ນີ້ໃນລະບົບ ກະລຸນາຕິດຕໍ່ຜູ້ດູແລລະບົບ (User not found)');
         }
 
         // 2. ตรวจสอบรหัสผ่านที่เก็บไว้ในระบบของเราด้วย bcrypt
@@ -62,6 +63,7 @@ export class LocalLoginUseCase {
                 department: user.department,
                 division: user.division,
                 unit: user.unit,
+                accessibleModules: getAccessibleModules(user),
             }
         };
     }

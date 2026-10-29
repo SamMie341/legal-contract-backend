@@ -2,6 +2,7 @@ import { Injectable, Inject, BadRequestException, NotFoundException, ForbiddenEx
 import { UserRole } from '@prisma/client';
 import * as contractAttachmentRepositoryInterface from '../../domain/repositories/contract-attachment.repository.interface.js';
 import { CONTRACT_REPOSITORY, type IContractRepository } from '../../domain/repositories/contract.repository.interface.js';
+import { isGeneralContractDivision } from '../../../../core/utils/division-helper.util.js';
 
 @Injectable()
 export class UploadAttachmentUseCase {
@@ -15,12 +16,12 @@ export class UploadAttachmentUseCase {
     async execute(contractId: string, file: Express.Multer.File, user: any) {
         const isObjectUser = typeof user === 'object' && user !== null;
         if (isObjectUser) {
+            const isContractDiv = isGeneralContractDivision(user.division);
             const canUpload =
                 user.role === UserRole.ADMIN ||
-                user.role === UserRole.MAIN_USER ||
-                user.canUpload === true;
+                (isContractDiv && (user.role === UserRole.MAIN_USER || user.canUpload === true));
             if (!canUpload) {
-                throw new ForbiddenException('ທ່ານບໍ່ມີສິດອັບໂຫຼດໄຟລ໌ແນບ (Permission Denied: canUpload required)');
+                throw new ForbiddenException('ທ່ານບໍ່ມີສິດອັບໂຫຼດໄຟລ໌ແນບສັນຍາ (ອະນຸຍາດສະເພາະ ພະແນກສັນຍາທົ່ວໄປ)');
             }
         }
         const userId = isObjectUser ? user.userId : user;

@@ -2,6 +2,7 @@ import { Injectable, Inject, BadRequestException, ForbiddenException } from '@ne
 import { UserRole } from '@prisma/client';
 import { CreateLegalDocumentDto } from '../dto/create-legal-document.dto.js';
 import * as repoInterface from '../../domain/repositories/legal-document.repository.interface.js';
+import { isLegalDocumentDivision } from '../../../../core/utils/division-helper.util.js';
 
 @Injectable()
 export class CreateLegalDocumentUseCase {
@@ -13,12 +14,12 @@ export class CreateLegalDocumentUseCase {
     async execute(dto: CreateLegalDocumentDto, user: any) {
         const isObjectUser = typeof user === 'object' && user !== null;
         if (isObjectUser) {
+            const isLegalDiv = isLegalDocumentDivision(user.division);
             const canUpload =
                 user.role === UserRole.ADMIN ||
-                user.role === UserRole.MAIN_USER ||
-                user.canUpload === true;
+                (isLegalDiv && (user.role === UserRole.MAIN_USER || user.canUpload === true));
             if (!canUpload) {
-                throw new ForbiddenException('ທ່ານບໍ່ມີສິດສ້າງນິຕິກຳ (Permission Denied: canUpload required)');
+                throw new ForbiddenException('ທ່ານບໍ່ມີສິດສ້າງນິຕິກຳ (ອະນຸຍາດສະເພາະ ພະແນກນິຕິກຳ)');
             }
         }
         const userId = isObjectUser ? user.userId : user;

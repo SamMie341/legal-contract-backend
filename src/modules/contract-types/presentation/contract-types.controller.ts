@@ -14,6 +14,9 @@ import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger'
 import { UserRole } from '@prisma/client';
 import { JwtAuthGuard } from '../../../core/guards/jwt-auth.guard.js';
 import { RolesGuard } from '../../../core/guards/roles.guard.js';
+import { DivisionGuard } from '../../../core/guards/division.guard.js';
+import { RequiredModule } from '../../../core/decorators/required-module.decorator.js';
+import { SystemModule } from '../../../core/constants/division.constant.js';
 import { Roles } from '../../../core/decorators/roles.decorator.js';
 
 import { CreateContractTypeDto } from '../application/dto/create-contract-type.dto.js';
@@ -29,7 +32,8 @@ import { DeleteContractTypeUseCase } from '../application/use-cases/delete-contr
 @ApiTags('Contract Types (ການຈັດການປະເພດສັນຍາ CRUD & Dropdown)')
 @ApiBearerAuth()
 @Controller('contract-types')
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(JwtAuthGuard, RolesGuard, DivisionGuard)
+@RequiredModule(SystemModule.CONTRACT_TYPES)
 export class ContractTypesController {
     constructor(
         private readonly getContractTypesUseCase: GetContractTypesUseCase,

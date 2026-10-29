@@ -1,8 +1,8 @@
 {
   "info": {
     "_postman_id": "a5e8f4c2-9e20-410a-b3e1-d1f568a0a991",
-    "name": "Legal Contract Management API (ລະບົບຈັດເກັບຂໍ້ມູນ ພະແນກສັນຍາທົ່ວໄປ)",
-    "description": "API collection for Legal Contract Management System (NestJS Clean Architecture).\nIncludes endpoints for Auth, Contract Types (CRUD & Dropdown), Contracts, Attachments, Notifications, Users (Sync from HRM & Permissions), Support & Tickets, and Audit Logs.",
+    "name": "EDL Legal Contract Management System API (ລະບົບຄຸ້ມຄອງສັນຍາ, ນິຕິກຳ, ຄະດີ ແລະ ສັນຍາຊື້-ຂາຍໄຟຟ້າ)",
+    "description": "API collection for EDL Legal Contract Management System (NestJS Clean Architecture).\nCovers all 3 main divisions:\n1. General Contracts (ພະແນກສັນຍາທົ່ວໄປ)\n2. Legal Documents & Cases (ພະແນກນິຕິກຳ ແລະ ແກ້ໄຂຂໍ້ຂັດແຍ່ງ)\n3. Power Purchase & Sale Contracts (ພະແນກສັນຍາຊື້-ຂາຍໄຟຟ້າ)\n\nUAT Base URL: https://likely-ecology-refused-letters.trycloudflare.com/api\nLocal Base URL: http://localhost:3001/api",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "auth": {
@@ -18,6 +18,16 @@
   "variable": [
     {
       "key": "baseUrl",
+      "value": "https://likely-ecology-refused-letters.trycloudflare.com/api",
+      "type": "string"
+    },
+    {
+      "key": "uatUrl",
+      "value": "https://likely-ecology-refused-letters.trycloudflare.com/api",
+      "type": "string"
+    },
+    {
+      "key": "localUrl",
       "value": "http://localhost:3001/api",
       "type": "string"
     },
@@ -67,6 +77,21 @@
       "type": "string"
     },
     {
+      "key": "powerContractId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "powerAttachmentId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "powerNotificationId",
+      "value": "",
+      "type": "string"
+    },
+    {
       "key": "notificationId",
       "value": "",
       "type": "string"
@@ -97,7 +122,7 @@
       "name": "01. Auth (ການຢັ້ງຢືນຕົວຕົນ)",
       "item": [
         {
-          "name": "Local Login (Admin)",
+          "name": "Login (POST /auth/login)",
           "event": [
             {
               "listen": "test",
@@ -138,50 +163,6 @@
               "path": [
                 "auth",
                 "login"
-              ]
-            }
-          }
-        },
-        {
-          "name": "HRM Login & Sync",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "const jsonData = pm.response.json();",
-                  "if (jsonData.accessToken) {",
-                  "    pm.collectionVariables.set(\"accessToken\", jsonData.accessToken);",
-                  "    pm.environment.set(\"accessToken\", jsonData.accessToken);",
-                  "}"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
-          "request": {
-            "auth": {
-              "type": "noauth"
-            },
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"username\": \"Ton\",\n  \"password\": \"HRM1234\"\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/auth/hrm-login",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "auth",
-                "hrm-login"
               ]
             }
           }
@@ -1560,7 +1541,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"employeeCode\": \"EDL-005\",\n  \"role\": \"MAIN_USER\",\n  \"canView\": true,\n  \"canUpload\": true,\n  \"canEdit\": true,\n  \"canDelete\": false,\n  \"canDownload\": true\n}"
+              "raw": "{\n  \"employeeCode\": \"EDL-001\",\n  \"role\": \"MAIN_USER\",\n  \"division\": \"ພະແນກສັນຍາທົ່ວໄປ\",\n  \"canView\": true,\n  \"canUpload\": true,\n  \"canEdit\": true,\n  \"canDelete\": true,\n  \"canDownload\": true\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/users",
@@ -1640,7 +1621,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"role\": \"MAIN_USER\",\n  \"isActive\": true,\n  \"canView\": true,\n  \"canUpload\": true,\n  \"canEdit\": true,\n  \"canDelete\": true,\n  \"canDownload\": true\n}"
+              "raw": "{\n  \"role\": \"MAIN_USER\",\n  \"division\": \"ພະແນກນິຕິກຳ ແລະ ແກ້ໄຂຂໍ້ຂັດແຍ່ງ\",\n  \"canView\": true,\n  \"canUpload\": true,\n  \"canEdit\": true,\n  \"canDelete\": true,\n  \"canDownload\": true\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/users/{{userId}}",
@@ -1904,6 +1885,428 @@
                   "key": "action",
                   "value": "CREATE_CONTRACT"
                 }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "09. Power Contracts (ສັນຍາຊື້-ຂາຍໄຟຟ້າ - ພະແນກສັນຍາຊື້-ຂາຍໄຟຟ້າ)",
+      "item": [
+        {
+          "name": "Get Power Contracts Dashboard (GET /power-contracts/dashboard)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/power-contracts/dashboard",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "power-contracts",
+                "dashboard"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get 5 Power Purchase Project Types (GET /power-contracts/project-types)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/power-contracts/project-types",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "power-contracts",
+                "project-types"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Power Contracts List (GET /power-contracts)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/power-contracts?page=1&limit=10&contractType=PURCHASE",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "power-contracts"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                },
+                {
+                  "key": "contractType",
+                  "value": "PURCHASE"
+                },
+                {
+                  "key": "status",
+                  "value": "ACTIVE",
+                  "disabled": true
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "disabled": true
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Power Purchase Contract - PPA (POST /power-contracts)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const jsonData = pm.response.json();",
+                  "if (jsonData.data && jsonData.data.id) {",
+                  "    pm.collectionVariables.set(\"powerContractId\", jsonData.data.id);",
+                  "    pm.environment.set(\"powerContractId\", jsonData.data.id);",
+                  "}",
+                  "pm.test(\"Status code is 201 Created\", () => pm.response.to.have.status(201));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"contractType\": \"PURCHASE\",\n  \"contractNumber\": \"PPA-2026-001\",\n  \"projectName\": \"ໂຄງການເຂື່ອນໄຟຟ້ານ້ຳອູ 1\",\n  \"projectTypeOrCustomer\": \"ໄຟຟ້ານໍ້າຕົກ\",\n  \"durationText\": \"25 ປີ\",\n  \"durationMonths\": 300,\n  \"signedDate\": \"2026-01-15\",\n  \"effectiveDate\": \"2026-02-01\",\n  \"expirationDate\": \"2051-02-01\",\n  \"installedCapacity\": \"50 MW\",\n  \"capacityValue\": 50.0,\n  \"capacityUnit\": \"MW\",\n  \"projectLocation\": \"ແຂວງຜົ້ງສາລີ\",\n  \"tariff\": \"0.065 USD/kWh\",\n  \"tariffValue\": 0.065,\n  \"tariffCurrency\": \"USD\",\n  \"additionalDetails\": \"ໄລຍະກໍ່ສ້າງ 3 ປີ\",\n  \"notifyDaysBefore\": 60\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/power-contracts",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "power-contracts"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Power Sale Contract - PSA (POST /power-contracts)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const jsonData = pm.response.json();",
+                  "if (jsonData.data && jsonData.data.id) {",
+                  "    pm.collectionVariables.set(\"powerContractId\", jsonData.data.id);",
+                  "    pm.environment.set(\"powerContractId\", jsonData.data.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"contractType\": \"SALE\",\n  \"contractNumber\": \"PSA-2026-001\",\n  \"projectName\": \"ສັນຍາຂາຍໄຟຟ້າໃຫ້ໂຮງງານຊີມັງລາວ\",\n  \"projectTypeOrCustomer\": \"ບໍລິສັດ ຊີມັງລາວ ຈຳກັດ\",\n  \"durationText\": \"10 ປີ\",\n  \"durationMonths\": 120,\n  \"signedDate\": \"2026-03-01\",\n  \"effectiveDate\": \"2026-04-01\",\n  \"expirationDate\": \"2036-04-01\",\n  \"installedCapacity\": \"15 MW\",\n  \"capacityValue\": 15.0,\n  \"capacityUnit\": \"MW\",\n  \"projectLocation\": \"ແຂວງວຽງຈັນ\",\n  \"tariff\": \"850 LAK/kWh\",\n  \"tariffValue\": 850,\n  \"tariffCurrency\": \"LAK\",\n  \"additionalDetails\": \"ສັນຍາຂາຍໄຟຟ້າແຮງດັນກາງ\",\n  \"notifyDaysBefore\": 60\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/power-contracts",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "power-contracts"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Power Contract by ID (GET /power-contracts/:id)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/power-contracts/{{powerContractId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "power-contracts",
+                "{{powerContractId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Power Contract Edit History (GET /power-contracts/:id/history)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/power-contracts/{{powerContractId}}/history?page=1&limit=10",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "power-contracts",
+                "{{powerContractId}}",
+                "history"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Power Contract (PATCH /power-contracts/:id)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"installedCapacity\": \"60 MW\",\n  \"capacityValue\": 60.0,\n  \"additionalDetails\": \"ປັບເພີ່ມກຳລັງການຕິດຕັ້ງເປັນ 60 MW\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/power-contracts/{{powerContractId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "power-contracts",
+                "{{powerContractId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delete Power Contract (DELETE /power-contracts/:id)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/power-contracts/{{powerContractId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "power-contracts",
+                "{{powerContractId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Power Contract Attachments (GET /power-contracts/:id/attachments)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/power-contracts/{{powerContractId}}/attachments",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "power-contracts",
+                "{{powerContractId}}",
+                "attachments"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Upload Power Contract Attachment (POST /power-contracts/:id/attachments)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const jsonData = pm.response.json();",
+                  "if (jsonData.data && jsonData.data.id) {",
+                  "    pm.collectionVariables.set(\"powerAttachmentId\", jsonData.data.id);",
+                  "    pm.environment.set(\"powerAttachmentId\", jsonData.data.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": []
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/power-contracts/{{powerContractId}}/attachments",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "power-contracts",
+                "{{powerContractId}}",
+                "attachments"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Preview Power Contract Attachment (GET /power-contracts/attachments/:attachmentId/preview)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/power-contracts/attachments/{{powerAttachmentId}}/preview",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "power-contracts",
+                "attachments",
+                "{{powerAttachmentId}}",
+                "preview"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Download Power Contract Attachment (GET /power-contracts/attachments/:attachmentId/download)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/power-contracts/attachments/{{powerAttachmentId}}/download",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "power-contracts",
+                "attachments",
+                "{{powerAttachmentId}}",
+                "download"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delete Power Contract Attachment (DELETE /power-contracts/attachments/:attachmentId)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/power-contracts/attachments/{{powerAttachmentId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "power-contracts",
+                "attachments",
+                "{{powerAttachmentId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Power Notifications - 60 Days (GET /power-notifications)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/power-notifications?unreadOnly=true",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "power-notifications"
+              ],
+              "query": [
+                {
+                  "key": "unreadOnly",
+                  "value": "true"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Mark Power Notification as Read (PATCH /power-notifications/:id/read)",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/power-notifications/{{powerNotificationId}}/read",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "power-notifications",
+                "{{powerNotificationId}}",
+                "read"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Mark All Power Notifications as Read (PATCH /power-notifications/read-all)",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/power-notifications/read-all",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "power-notifications",
+                "read-all"
               ]
             }
           }

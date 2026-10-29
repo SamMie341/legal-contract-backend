@@ -154,7 +154,7 @@ describe('UpdateContractUseCase', () => {
     });
 
     it('should update contract when user has canEdit permission', async () => {
-        const user = { userId: 'u1', role: UserRole.VIEWER, canEdit: true };
+        const user = { userId: 'u1', role: UserRole.VIEWER, canEdit: true, division: 'ພະແນກສັນຍາທົ່ວໄປ' };
         mockRepo.updateContractWithAudit.mockResolvedValue({ id: 'c1', title: 'New' });
 
         const result = await useCase.execute('c1', { title: 'New' }, user);

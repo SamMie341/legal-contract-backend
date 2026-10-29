@@ -4,6 +4,7 @@ import { LoginDto } from '../dto/login.dto.js';
 import * as bcrypt from 'bcrypt';
 import * as hrmApiInterface from '../../domain/interface/hrm-api.interface.js';
 import * as authUserRepositoryInterface from '../../domain/repositories/auth-user.repository.interface.js';
+import { getAccessibleModules } from '../../../../core/utils/division-helper.util.js';
 
 @Injectable()
 export class LoginAndSyncHrmUseCase {
@@ -78,6 +79,7 @@ export class LoginAndSyncHrmUseCase {
                 position: user.position,
                 phone: user.phone,
                 email: user.email,
+                accessibleModules: getAccessibleModules(user),
             },
         };
     }

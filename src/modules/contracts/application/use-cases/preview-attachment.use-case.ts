@@ -1,6 +1,7 @@
 import { Injectable, Inject, NotFoundException, ForbiddenException } from '@nestjs/common';
 import * as contractAttachmentRepositoryInterface from '../../domain/repositories/contract-attachment.repository.interface.js';
 import { UserRole } from '@prisma/client';
+import { isGeneralContractDivision } from '../../../../core/utils/division-helper.util.js';
 
 @Injectable()
 export class PreviewAttachmentUseCase {
@@ -10,14 +11,14 @@ export class PreviewAttachmentUseCase {
     ) { }
 
     async execute(attachmentId: string, user: any) {
-        // 1. ตรวจสอบสิทธิ์การดูข้อมูล (canView)
+        // 1. ตรวจสอบสิทธิ์การดูข้อมูล (canView ตาม Division)
+        const isContractDiv = isGeneralContractDivision(user?.division);
         const canView =
             user.role === UserRole.ADMIN ||
-            user.role === UserRole.MAIN_USER ||
-            user.canView !== false;
+            (isContractDiv && (user.role === UserRole.MAIN_USER || user.canView !== false));
 
         if (!canView) {
-            throw new ForbiddenException('ທ່ານບໍ່ມີສິດເບິ່ງໄຟລ໌ນີ້ (Permission Denied: canView required)');
+            throw new ForbiddenException('ທ່ານບໍ່ມີສິດເບິ່ງໄຟລ໌ນີ້ (ອະນຸຍາດສະເພາະ ພະແນກສັນຍາທົ່ວໄປ)');
         }
 
         // 2. ค้นหาไฟล์ในระบบ

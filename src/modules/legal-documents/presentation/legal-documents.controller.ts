@@ -13,6 +13,9 @@ import {
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../../core/guards/jwt-auth.guard.js';
 import { RolesGuard } from '../../../core/guards/roles.guard.js';
+import { DivisionGuard } from '../../../core/guards/division.guard.js';
+import { RequiredModule } from '../../../core/decorators/required-module.decorator.js';
+import { SystemModule } from '../../../core/constants/division.constant.js';
 import { CurrentUser } from '../../../core/decorators/current-user.decorator.js';
 
 import { CreateLegalDocumentDto } from '../application/dto/create-legal-document.dto.js';
@@ -29,7 +32,8 @@ import { GetLegalDocumentDashboardUseCase } from '../application/use-cases/get-l
 @ApiTags('Legal Documents (ລະບົບຄຸ້ມຄອງ ແລະ ຕິດຕາມນິຕິກຳ)')
 @ApiBearerAuth()
 @Controller('legal-documents')
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(JwtAuthGuard, RolesGuard, DivisionGuard)
+@RequiredModule(SystemModule.LEGAL_DOCUMENTS)
 export class LegalDocumentsController {
     constructor(
         private readonly createLegalDocumentUseCase: CreateLegalDocumentUseCase,

@@ -1,6 +1,7 @@
 import { Injectable, Inject, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { UserRole } from '@prisma/client';
 import * as attachmentRepoInterface from '../../domain/repositories/case-attachment.repository.interface.js';
+import { isDisputeResolutionDivision } from '../../../../core/utils/division-helper.util.js';
 
 @Injectable()
 export class PreviewCaseAttachmentUseCase {
@@ -10,8 +11,12 @@ export class PreviewCaseAttachmentUseCase {
     ) { }
 
     async execute(attachmentId: string, user: any) {
-        if (user && user.role !== UserRole.ADMIN && user.role !== UserRole.MAIN_USER && user.canView === false) {
-            throw new ForbiddenException('ທ່ານບໍ່ມີສິດເບິ່ງໄຟລ໌ແນບ (Permission Denied: canView required)');
+        if (
+            user &&
+            user.role !== UserRole.ADMIN &&
+            (!isDisputeResolutionDivision(user?.division) || user.canView === false)
+        ) {
+            throw new ForbiddenException('ທ່ານບໍ່ມີສິດເບິ່ງໄຟລ໌ແນບ (ອະນຸຍາດສະເພາະ ພະແນກແກ້ໄຂຂໍ້ຂັດແຍ່ງ ແລະ ດຳເນີນຄະດີ)');
         }
 
         const attachment = await this.attachmentRepo.findById(attachmentId);

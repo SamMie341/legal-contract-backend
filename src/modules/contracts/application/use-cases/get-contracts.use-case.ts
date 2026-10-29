@@ -1,6 +1,7 @@
 import { Injectable, Inject, ForbiddenException } from '@nestjs/common';
 import { UserRole } from '@prisma/client';
 import * as contractRepositoryInterface from '../../domain/repositories/contract.repository.interface.js';
+import { isGeneralContractDivision } from '../../../../core/utils/division-helper.util.js';
 
 @Injectable()
 export class GetContractsUseCase {
@@ -10,8 +11,12 @@ export class GetContractsUseCase {
     ) { }
 
     async execute(query: any, user?: any) {
-        if (user && user.role !== UserRole.ADMIN && user.role !== UserRole.MAIN_USER && user.canView === false) {
-            throw new ForbiddenException('ທ່ານບໍ່ມີສິດເບິ່ງຂໍ້ມູນສັນຍາ (Permission Denied: canView required)');
+        if (
+            user &&
+            user.role !== UserRole.ADMIN &&
+            (!isGeneralContractDivision(user.division) || user.canView === false)
+        ) {
+            throw new ForbiddenException('ທ່ານບໍ່ມີສິດເບິ່ງຂໍ້ມູນສັນຍາ (ອະນຸຍາດສະເພາະ ພະແນກສັນຍາທົ່ວໄປ)');
         }
 
         const page = Number(query.page) || 1;

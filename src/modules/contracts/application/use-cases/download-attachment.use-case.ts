@@ -1,6 +1,7 @@
 import { Injectable, Inject, NotFoundException, ForbiddenException } from '@nestjs/common';
 import * as contractAttachmentRepositoryInterface from '../../domain/repositories/contract-attachment.repository.interface.js';
 import { UserRole } from '@prisma/client';
+import { isGeneralContractDivision } from '../../../../core/utils/division-helper.util.js';
 
 @Injectable()
 export class DownloadAttachmentUseCase {
@@ -10,14 +11,12 @@ export class DownloadAttachmentUseCase {
     ) { }
 
     async execute(attachmentId: string, user: any, ipAddress?: string, userAgent?: string) {
-        // 1. เช็คสิทธิ์การดาวน์โหลด (ตามเอกสาร Requirement ข้อ 5)
-        // - Admin โหลดได้เสมอ
-        // - ผู้ใช้ที่ได้รับอนุญาต canDownload = true
+        // 1. เช็คสิทธิ์การดาวน์โหลด (Admin โหลดได้เสมอ หรือ ผู้ใช้แผนกสัญญาที่ canDownload = true)
         const isAdmin = user.role === UserRole.ADMIN;
-        const isAuthorizedUser = user.canDownload === true;
+        const isAuthorizedUser = isGeneralContractDivision(user?.division) && user.canDownload === true;
 
         if (!isAdmin && !isAuthorizedUser) {
-            throw new ForbiddenException('ທ່ານບໍ່ມີສິດດາວໂຫຼດໄຟລ໌ນີ້ (Permission Denied: canDownload required)');
+            throw new ForbiddenException('ທ່ານບໍ່ມີສິດດາວໂຫຼດໄຟລ໌ນີ້ (ອະນຸຍາດສະເພາະ ພະແນກສັນຍາທົ່ວໄປ ທີ່ມີສິດ canDownload)');
         }
 
         // 2. ค้นหาไฟล์ในระบบ

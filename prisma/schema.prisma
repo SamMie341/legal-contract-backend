@@ -51,6 +51,18 @@ enum AuditAction {
   CREATE_LEGAL_CASE
   UPDATE_LEGAL_CASE
   DELETE_LEGAL_CASE
+  CREATE_POWER_CONTRACT
+  UPDATE_POWER_CONTRACT
+  DELETE_POWER_CONTRACT
+  UPLOAD_POWER_ATTACHMENT
+  DOWNLOAD_POWER_ATTACHMENT
+  DELETE_POWER_ATTACHMENT
+}
+
+/// ປະເພດສັນຍາຊື້-ຂາຍໄຟຟ້າ (ພະແນກສັນຍາຊື້-ຂາຍໄຟຟ້າ)
+enum PowerContractType {
+  PURCHASE // ສັນຍາຊື້ໄຟຟ້າ (Power Purchase Agreement - PPA)
+  SALE     // ສັນຍາຂາຍໄຟຟ້າ (Power Sale Agreement - PSA)
 }
 
 /// สถานะของการแจ้งปัญหา/ปรับปรุงระบบ (ข้อ 6)
@@ -156,6 +168,13 @@ model User {
   createdLegalCases           LegalCase[]          @relation("LegalCaseCreator")
   updatedLegalCases           LegalCase[]          @relation("LegalCaseUpdater")
   uploadedCaseAttachments     CaseAttachment[]     @relation("CaseAttachmentUploader")
+
+  // Relations - Power Contracts (ສັນຍາຊື້-ຂາຍໄຟຟ້າ)
+  createdPowerContracts       PowerContract[]           @relation("PowerContractCreator")
+  updatedPowerContracts       PowerContract[]           @relation("PowerContractUpdater")
+  uploadedPowerAttachments    PowerContractAttachment[] @relation("PowerAttachmentUploader")
+  powerDownloadLogs           PowerContractDownloadLog[]
+  powerNotifications          PowerContractNotification[]
 
   @@index([role, isActive])
   @@map("users")
@@ -397,6 +416,9 @@ model AuditLog {
   contractId String?   @map("contract_id") @db.Uuid
   contract   Contract? @relation(fields: [contractId], references: [id], onDelete: SetNull)
 
+  powerContractId String?        @map("power_contract_id") @db.Uuid
+  powerContract   PowerContract? @relation(fields: [powerContractId], references: [id], onDelete: SetNull)
+
   action    AuditAction
   oldValues Json?       @map("old_values") // เก็บค่าก่อนแก้ไข (JSONB)
   newValues Json?       @map("new_values") // เก็บค่าหลังแก้ไข (JSONB)
@@ -404,6 +426,7 @@ model AuditLog {
   createdAt DateTime    @default(now()) @map("created_at") @db.Timestamptz()
 
   @@index([contractId])
+  @@index([powerContractId])
   @@index([userId, createdAt])
   @@map("audit_logs")
 }
@@ -536,4 +559,149 @@ model CaseAttachment {
 
   @@index([legalCaseId])
   @@map("case_attachments")
+}
+
+// ==========================================
+// 11. POWER PURCHASE & SALE CONTRACTS (ພະແນກສັນຍາຊື້-ຂາຍໄຟຟ້າ)
+// ==========================================
+
+/// ຕາຕະລາງເກັບຂໍ້ມູນສັນຍາຊື້-ຂາຍໄຟຟ້າ (PPA & PSA)
+model PowerContract {
+  id String @id @default(uuid()) @db.Uuid
+
+  // 1. ປະເພດສັນຍາ (ສັນຍາຊື້ໄຟຟ້າ / ສັນຍາຂາຍໄຟຟ້າ)
+  contractType PowerContractType @map("contract_type")
+
+  // ເລກທີສັນຍາ (ກອກຂໍ້ມູນດ້ວຍມື)
+  contractNumber String? @map("contract_number")
+
+  // 2. ຊື່ໂຄງການ (ກອກຂໍ້ມູນດ້ວຍມື)
+  projectName String @map("project_name")
+
+  // 3. ປະເພດໂຄງການ/ລູກຄ້າ
+  // ສັນຍາຊື້: ເລືອກຕາມ 5 ປະເພດ (ໄຟຟ້ານ້ຳຕົກ, ແສງຕາເວັນ, ລົມ, ຄວາມຮ້ອນ, ຊີວະມວນ)
+  // ສັນຍາຂາຍ: ກອກຂໍ້ມູນດ້ວຍມື (ຊື່ລູກຄ້າ ຫຼື ປະເພດໂຄງການ)
+  projectTypeOrCustomer String @map("project_type_or_customer")
+
+  // 4. ອາຍຸສັນຍາ (ກອກຂໍ້ມູນດ້ວຍມື ເຊັ່ນ "25 ປີ")
+  durationText   String? @map("duration_text")
+  durationMonths Int?    @map("duration_months")
+
+  // 5. ມື້ລົງລາຍເຊັນ (ເລືອກວັນທີຈາກປະຕິທິນ)
+  signedDate DateTime? @map("signed_date") @db.Date
+
+  // 6. ມື້ມີຜົນບັງຄັບໃຊ້ (ເລືອກວັນທີຈາກປະຕິທິນ)
+  effectiveDate DateTime? @map("effective_date") @db.Date
+
+  // 7. ມື້ສີ້ນສຸດ (ເລືອກວັນທີຈາກປະຕິທິນ - ໃຊ້ແຈ້ງເຕືອນລ່ວງໜ້າ 60 ວັນ)
+  expirationDate DateTime? @map("expiration_date") @db.Date
+
+  // 8. ກຳລັງການຕິດຕັ້ງ (ກອກຂໍ້ມູນດ້ວຍມື ເຊັ່ນ "50 MW", "120 kW")
+  installedCapacity String?  @map("installed_capacity")
+  capacityValue     Decimal? @map("capacity_value") @db.Decimal(15, 2)
+  capacityUnit      String?  @default("MW") @map("capacity_unit")
+
+  // 9. ທີ່ຕັ້ງໂຄງການ (ກອກຂໍ້ມູນດ້ວຍມື)
+  projectLocation String? @map("project_location")
+
+  // 10. ລາຄາໄຟຟ້າ (ກອກຂໍ້ມູນດ້ວຍມື ເຊັ່ນ "0.065 USD/kWh")
+  tariff         String?   @map("tariff")
+  tariffValue    Decimal?  @map("tariff_value") @db.Decimal(15, 4)
+  tariffCurrency Currency? @default(USD) @map("tariff_currency")
+
+  // 11. ລາຍລະອຽດອື່ນໆ (ກອກຂໍ້ມູນດ້ວຍມື)
+  additionalDetails String? @map("additional_details")
+
+  // ຟັງຊັ້ນຄວບຄຸມສະຖານະ ແລະ ການແຈ້ງເຕືອນລ່ວງໜ້າ 60 ວັນ (ຂໍ້ 1)
+  status           ContractStatus @default(ACTIVE)
+  notifyDaysBefore Int            @default(60) @map("notify_days_before")
+  isExpiryNotified Boolean        @default(false) @map("is_expiry_notified")
+  lastNotifiedAt   DateTime?      @map("last_notified_at") @db.Timestamptz()
+
+  // ຂໍ້ມູນຜູ້ສ້າງ ແລະ ຜູ້ແກ້ໄຂ
+  createdById String  @map("created_by_id") @db.Uuid
+  createdBy   User    @relation("PowerContractCreator", fields: [createdById], references: [id])
+  updatedById String? @map("updated_by_id") @db.Uuid
+  updatedBy   User?   @relation("PowerContractUpdater", fields: [updatedById], references: [id])
+
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt DateTime  @updatedAt @map("updated_at") @db.Timestamptz()
+  deletedAt DateTime? @map("deleted_at") @db.Timestamptz()
+
+  // Relations
+  attachments   PowerContractAttachment[]
+  notifications PowerContractNotification[]
+  downloadLogs  PowerContractDownloadLog[]
+  auditLogs     AuditLog[]
+
+  @@index([contractType])
+  @@index([contractNumber])
+  @@index([projectName])
+  @@index([expirationDate, status])
+  @@index([status])
+  @@index([deletedAt])
+  @@map("power_contracts")
+}
+
+/// ຕາຕະລາງເກັບໄຟລ໌ເອກະສານສັນຍາຊື້-ຂາຍໄຟຟ້າ (ຂໍ້ 3)
+model PowerContractAttachment {
+  id              String        @id @default(uuid()) @db.Uuid
+  powerContractId String        @map("power_contract_id") @db.Uuid
+  powerContract   PowerContract @relation(fields: [powerContractId], references: [id], onDelete: Cascade)
+
+  fileName   String  @map("file_name")
+  storageKey String  @map("storage_key")
+  mimeType   String  @map("mime_type")
+  fileSize   BigInt  @map("file_size")
+  checksum   String?
+  version    Int     @default(1)
+
+  uploadedById String    @map("uploaded_by_id") @db.Uuid
+  uploadedBy   User      @relation("PowerAttachmentUploader", fields: [uploadedById], references: [id])
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz()
+  deletedAt    DateTime? @map("deleted_at") @db.Timestamptz()
+
+  downloadLogs PowerContractDownloadLog[]
+
+  @@index([powerContractId])
+  @@map("power_contract_attachments")
+}
+
+/// ຕາຕະລາງບັນທຶກປະຫວັດການດາວໂຫຼດໄຟລ໌ສັນຍາຊື້-ຂາຍໄຟຟ້າ
+model PowerContractDownloadLog {
+  id              String                  @id @default(uuid()) @db.Uuid
+  powerContractId String                  @map("power_contract_id") @db.Uuid
+  powerContract   PowerContract           @relation(fields: [powerContractId], references: [id], onDelete: Cascade)
+  attachmentId    String                  @map("attachment_id") @db.Uuid
+  attachment      PowerContractAttachment @relation(fields: [attachmentId], references: [id], onDelete: Cascade)
+  userId          String                  @map("user_id") @db.Uuid
+  user            User                    @relation(fields: [userId], references: [id])
+
+  ipAddress    String?  @map("ip_address")
+  userAgent    String?  @map("user_agent")
+  downloadedAt DateTime @default(now()) @map("downloaded_at") @db.Timestamptz()
+
+  @@index([powerContractId])
+  @@index([userId, downloadedAt])
+  @@map("power_contract_download_logs")
+}
+
+/// ຕາຕະລາງແຈ້ງເຕືອນສຳລັບສັນຍາຊື້-ຂາຍໄຟຟ້າ (ແຈ້ງເຕືອນລ່ວງໜ້າ 60 ວັນ - ຂໍ້ 1)
+model PowerContractNotification {
+  id              String        @id @default(uuid()) @db.Uuid
+  powerContractId String        @map("power_contract_id") @db.Uuid
+  powerContract   PowerContract @relation(fields: [powerContractId], references: [id], onDelete: Cascade)
+  userId          String?       @map("user_id") @db.Uuid
+  user            User?         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  title         String
+  message       String
+  daysRemaining Int       @map("days_remaining")
+  isRead        Boolean   @default(false) @map("is_read")
+  readAt        DateTime? @map("read_at") @db.Timestamptz()
+  notifiedDate  DateTime  @default(now()) @map("notified_date") @db.Timestamptz()
+
+  @@index([userId, isRead])
+  @@index([powerContractId, daysRemaining])
+  @@map("power_contract_notifications")
 }

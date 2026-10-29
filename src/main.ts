@@ -19,6 +19,7 @@ async function bootstrap() {
       transformOptions: { enableImplicitConversion: true },
     }),
   );
+  // app.enableCors();
 
   const config = new DocumentBuilder()
     .setTitle('Legal Contract Management API')

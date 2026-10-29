@@ -1,6 +1,10 @@
 import { Controller, Get, Patch, Param, ParseUUIDPipe, Query, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../../core/guards/jwt-auth.guard.js';
+import { RolesGuard } from '../../../core/guards/roles.guard.js';
+import { DivisionGuard } from '../../../core/guards/division.guard.js';
+import { RequiredModule } from '../../../core/decorators/required-module.decorator.js';
+import { SystemModule } from '../../../core/constants/division.constant.js';
 import { CurrentUser } from '../../../core/decorators/current-user.decorator.js';
 import { GetNotificationsUseCase } from '../application/use-cases/get-notifications.use-case.js';
 import { MarkNotificationReadUseCase } from '../application/use-cases/mark-notification-read.use-case.js';
@@ -8,7 +12,8 @@ import { MarkNotificationReadUseCase } from '../application/use-cases/mark-notif
 @ApiTags('Notifications')
 @ApiBearerAuth()
 @Controller('notifications')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard, DivisionGuard)
+@RequiredModule(SystemModule.CONTRACTS)
 export class NotificationsController {
     constructor(
         private readonly getNotificationsUseCase: GetNotificationsUseCase,

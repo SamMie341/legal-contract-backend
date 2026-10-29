@@ -2,7 +2,6 @@ import { Module } from '@nestjs/common';
 import { HttpModule } from '@nestjs/axios';
 import { AuthController } from './presentation/auth.controller.js';
 import { HrmApiService } from './infrastructure/hrm/hrm-api.service.js';
-import { LoginAndSyncHrmUseCase } from './application/use-cases/login-and-sync-hrm.use-case.js';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { JwtStrategy } from './infrastructure/strategies/jwt.strategy.js';
@@ -33,7 +32,6 @@ import { HRM_API_SERVICE } from './domain/interface/hrm-api.interface.js';
     controllers: [AuthController],
     providers: [
         HrmApiService,
-        LoginAndSyncHrmUseCase,
         LocalLoginUseCase,
         JwtStrategy,
         {

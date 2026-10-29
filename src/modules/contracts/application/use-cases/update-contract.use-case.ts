@@ -2,6 +2,7 @@ import { Injectable, Inject, ForbiddenException, BadRequestException } from '@ne
 import * as contractRepositoryInterface from '../../domain/repositories/contract.repository.interface.js';
 import { UpdateContractDto } from '../dto/update-contract.dto.js';
 import { UserRole } from '@prisma/client';
+import { isGeneralContractDivision } from '../../../../core/utils/division-helper.util.js';
 
 @Injectable()
 export class UpdateContractUseCase {
@@ -11,10 +12,13 @@ export class UpdateContractUseCase {
     ) { }
 
     async execute(id: string, dto: UpdateContractDto, user: any) {
-        // 1. ตรวจสอบสิทธิ์การแก้ไข (Admin, Main User, หรือผู้มีสิทธิ์ canEdit)
-        const canEdit = user.role === UserRole.ADMIN || user.role === UserRole.MAIN_USER || user.canEdit === true;
+        // 1. ตรวจสอบสิทธิ์การแก้ไข (Admin, Main User, หรือผู้มีสิทธิ์ canEdit ตาม Division)
+        const isContractDiv = isGeneralContractDivision(user?.division);
+        const canEdit =
+            user.role === UserRole.ADMIN ||
+            (isContractDiv && (user.role === UserRole.MAIN_USER || user.canEdit === true));
         if (!canEdit) {
-            throw new ForbiddenException('ທ່ານບໍ່ມີສິດແກ້ໄຂຂໍ້ມູນສັນຍາ (Permission Denied: canEdit required)');
+            throw new ForbiddenException('ທ່ານບໍ່ມີສິດແກ້ໄຂຂໍ້ມູນສັນຍາ (ອະນຸຍາດສະເພາະ ພະແນກສັນຍາທົ່ວໄປ)');
         }
 
         // 2. ถ้ามีการเปลี่ยนประเภทสัญญา ให้ตรวจสอบว่าประเภทใหม่มีอยู่จริง

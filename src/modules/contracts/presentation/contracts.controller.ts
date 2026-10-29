@@ -2,6 +2,9 @@ import { Controller, Post, Get, Patch, Delete, Body, Param, ParseUUIDPipe, Query
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../../core/guards/jwt-auth.guard.js';
 import { RolesGuard } from '../../../core/guards/roles.guard.js';
+import { DivisionGuard } from '../../../core/guards/division.guard.js';
+import { RequiredModule } from '../../../core/decorators/required-module.decorator.js';
+import { SystemModule } from '../../../core/constants/division.constant.js';
 import { CurrentUser } from '../../../core/decorators/current-user.decorator.js';
 import { CreateContractUseCase } from '../application/use-cases/create-contract.use-case.js';
 import { CreateContractDto } from '../application/dto/create-contract.dto.js';
@@ -17,7 +20,8 @@ import { GetDashboardStatsUseCase } from '../application/use-cases/get-dashboard
 @ApiTags('Contracts (ການຈັດການສັນຍາ)')
 @ApiBearerAuth()
 @Controller('contracts')
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(JwtAuthGuard, RolesGuard, DivisionGuard)
+@RequiredModule(SystemModule.CONTRACTS)
 export class ContractsController {
     constructor(
         private readonly createContractUseCase: CreateContractUseCase,

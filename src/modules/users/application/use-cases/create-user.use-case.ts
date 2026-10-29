@@ -1,4 +1,4 @@
-import { Injectable, Inject, ConflictException } from '@nestjs/common';
+import { Injectable, Inject, ConflictException, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
 import { UserRole } from '@prisma/client';
@@ -8,6 +8,8 @@ import { CreateUserDto } from '../dto/create-user.dto.js';
 
 @Injectable()
 export class CreateUserUseCase {
+    private readonly logger = new Logger(CreateUserUseCase.name);
+
     constructor(
         @Inject(userRepoInterface.USER_REPOSITORY)
         private readonly userRepository: userRepoInterface.IUserRepository,
@@ -24,22 +26,29 @@ export class CreateUserUseCase {
             throw new ConflictException(`ພະນັກງານລະຫັດ ${dto.employeeCode} ມີໃນລະບົບແລ້ວ`);
         }
 
-        // 2. ເຊື່ອມຕໍ່ HRM ເພື່ອດຶງຂໍ້ມູນພະນັກງານອັດຕະໂນມັດຕາມລະຫັດພະນັກງານ
-        const hrmUser = this.configService.get<string>('HRM_SYNC_USERNAME') || 'Ton';
-        const hrmPass = this.configService.get<string>('HRM_SYNC_PASSWORD') || 'HRM1234';
+        // 2. ເຊື່ອມຕໍ່ HRM ເພື່ອດຶງຂໍ້ມູນພະນັກງານອັດຕະໂນມັດຕາມລະຫັດພະນັກງານ (ພ້ອມ fallback ຫາກ HRM ບໍ່ສາມາດເຊື່ອມຕໍ່ໄດ້)
+        let hrmEmployee: any = null;
+        try {
+            const hrmUser = this.configService.get<string>('HRM_SYNC_USERNAME') || 'Ton';
+            const hrmPass = this.configService.get<string>('HRM_SYNC_PASSWORD') || 'HRM1234';
 
-        const hrmToken = await this.hrmApiService.login(hrmUser, hrmPass);
-        const hrmEmployee = await this.hrmApiService.getEmployeeByCode(hrmToken, dto.employeeCode);
+            const hrmToken = await this.hrmApiService.login(hrmUser, hrmPass);
+            hrmEmployee = await this.hrmApiService.getEmployeeByCode(hrmToken, dto.employeeCode);
+        } catch (error: any) {
+            this.logger.warn(`Could not sync from HRM for employee ${dto.employeeCode}: ${error?.message || error}. Falling back to manual input.`);
+        }
 
-        // 3. ຈັດການຂໍ້ມູນຈາກ HRM ອັດຕະໂນມັດ
-        const empCode = hrmEmployee.emp_code || dto.employeeCode;
-        const fullName = `${hrmEmployee.first_name_la} ${hrmEmployee.last_name_la}`.trim();
-        const department = hrmEmployee.office?.department?.department_name || '';
-        const division = hrmEmployee.office?.division?.division_name || '';
-        const unit = hrmEmployee.office?.unit?.unit_name || '';
-        const position = hrmEmployee.office?.position?.pos_name || '';
-        const email = hrmEmployee.email || `${empCode}@edl.com.la`;
-        const phone = hrmEmployee.phone || '';
+        // 3. ຈັດການຂໍ້ມູນຈາກ HRM ຫຼື Fallback
+        const empCode = hrmEmployee?.emp_code || dto.employeeCode;
+        const fullName = hrmEmployee
+            ? `${hrmEmployee.first_name_la} ${hrmEmployee.last_name_la}`.trim()
+            : (dto.fullName || dto.employeeCode);
+        const department = dto.department || hrmEmployee?.office?.department?.department_name || '';
+        const division = dto.division || hrmEmployee?.office?.division?.division_name || '';
+        const unit = hrmEmployee?.office?.unit?.unit_name || '';
+        const position = hrmEmployee?.office?.position?.pos_name || '';
+        const email = dto.email || hrmEmployee?.email || `${empCode}@edl.com.la`;
+        const phone = dto.phone || hrmEmployee?.phone || '';
 
         const defaultPassword = `EDL@${empCode}`;
         const passwordHash = await bcrypt.hash(defaultPassword, 10);
@@ -68,7 +77,7 @@ export class CreateUserUseCase {
         );
 
         return {
-            message: 'ເພີ່ມຜູ້ໃຊ້ໂດຍການ Sync ຂໍ້ມູນຈາກ HRM ສຳເລັດ',
+            message: hrmEmployee ? 'ເພີ່ມຜູ້ໃຊ້ໂດຍການ Sync ຂໍ້ມູນຈາກ HRM ສຳເລັດ' : 'ເພີ່ມຜູ້ໃຊ້ສຳເລັດ (ຂໍ້ມູນພາຍໃນລະບົບ)',
             data: newUser,
         };
     }

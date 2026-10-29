@@ -19,10 +19,13 @@ import { diskStorage } from 'multer';
 import { v4 as uuidv4 } from 'uuid';
 import { extname, isAbsolute, resolve } from 'path';
 import type { Response, Request } from 'express';
-import { createReadStream, existsSync, mkdirSync } from 'fs';
+import { existsSync, mkdirSync } from 'fs';
 
 import { JwtAuthGuard } from '../../../core/guards/jwt-auth.guard.js';
 import { RolesGuard } from '../../../core/guards/roles.guard.js';
+import { DivisionGuard } from '../../../core/guards/division.guard.js';
+import { RequiredModule } from '../../../core/decorators/required-module.decorator.js';
+import { SystemModule } from '../../../core/constants/division.constant.js';
 import { CurrentUser } from '../../../core/decorators/current-user.decorator.js';
 import { UserRole } from '@prisma/client';
 
@@ -82,7 +85,8 @@ const fileFilter = (req: any, file: Express.Multer.File, cb: any) => {
 @ApiTags('Attachments (ເອກະສານຕິດຄັດ)')
 @ApiBearerAuth()
 @Controller('contracts')
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(JwtAuthGuard, RolesGuard, DivisionGuard)
+@RequiredModule(SystemModule.CONTRACTS)
 export class AttachmentsController {
   constructor(
     private readonly uploadUseCase: UploadAttachmentUseCase,

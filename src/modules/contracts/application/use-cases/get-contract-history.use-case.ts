@@ -3,6 +3,7 @@ import { UserRole } from '@prisma/client';
 import * as contractRepositoryInterface from '../../domain/repositories/contract.repository.interface.js';
 import { GetContractHistoryDto } from '../dto/get-contract-history.dto.js';
 import { formatContractAuditLog } from '../helpers/contract-history-formatter.helper.js';
+import { isGeneralContractDivision } from '../../../../core/utils/division-helper.util.js';
 
 @Injectable()
 export class GetContractHistoryUseCase {
@@ -12,9 +13,13 @@ export class GetContractHistoryUseCase {
     ) { }
 
     async execute(id: string, query: GetContractHistoryDto, user?: any) {
-        // 1. ກວດສອບສິດການເຂົ້າເຖິງ (Admin, Main User ຫຼື ຜູ້ມີສິດ canView)
-        if (user && user.role !== UserRole.ADMIN && user.role !== UserRole.MAIN_USER && user.canView === false) {
-            throw new ForbiddenException('ທ່ານບໍ່ມີສິດເບິ່ງປະຫວັດການແກ້ໄຂສັນຍາ (Permission Denied: canView required)');
+        // 1. ກວດສອບສິດການເຂົ້າເຖິງ (Admin, Main User ຫຼື ຜູ້ມີສິດ canView ຕາມ Division)
+        if (
+            user &&
+            user.role !== UserRole.ADMIN &&
+            (!isGeneralContractDivision(user.division) || user.canView === false)
+        ) {
+            throw new ForbiddenException('ທ່ານບໍ່ມີສິດເບິ່ງປະຫວັດການແກ້ໄຂສັນຍາ (ອະນຸຍາດສະເພາະ ພະແນກສັນຍາທົ່ວໄປ)');
         }
 
         // 2. ກວດສອບວ່າສັນຍານີ້ມີຢູ່ແທ້ບໍ່

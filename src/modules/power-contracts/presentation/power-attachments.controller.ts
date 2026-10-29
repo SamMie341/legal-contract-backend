@@ -1,0 +1,229 @@
+import {
+    Controller,
+    Post,
+    Get,
+    Delete,
+    Param,
+    ParseUUIDPipe,
+    UseInterceptors,
+    UploadedFile,
+    UseGuards,
+    Req,
+    Res,
+    BadRequestException,
+    ForbiddenException,
+} from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiBearerAuth, ApiConsumes, ApiBody } from '@nestjs/swagger';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { diskStorage } from 'multer';
+import { v4 as uuidv4 } from 'uuid';
+import { extname, isAbsolute, resolve } from 'path';
+import type { Response, Request } from 'express';
+import { existsSync, mkdirSync } from 'fs';
+
+import { JwtAuthGuard } from '../../../core/guards/jwt-auth.guard.js';
+import { RolesGuard } from '../../../core/guards/roles.guard.js';
+import { DivisionGuard } from '../../../core/guards/division.guard.js';
+import { RequiredModule } from '../../../core/decorators/required-module.decorator.js';
+import { SystemModule } from '../../../core/constants/division.constant.js';
+import { CurrentUser } from '../../../core/decorators/current-user.decorator.js';
+import { UserRole } from '@prisma/client';
+import { isPowerContractDivision } from '../../../core/utils/division-helper.util.js';
+
+import { UploadPowerAttachmentUseCase } from '../application/use-cases/upload-power-attachment.use-case.js';
+import { DownloadPowerAttachmentUseCase } from '../application/use-cases/download-power-attachment.use-case.js';
+import { PreviewPowerAttachmentUseCase } from '../application/use-cases/preview-power-attachment.use-case.js';
+import { GetPowerAttachmentsUseCase } from '../application/use-cases/get-power-attachments.use-case.js';
+import { DeletePowerAttachmentUseCase } from '../application/use-cases/delete-power-attachment.use-case.js';
+
+const uploadDir = resolve(
+    process.cwd(),
+    process.env.POWER_CONTRACT_UPLOAD_DIR || '../uploads/power-contracts',
+);
+if (!existsSync(uploadDir)) {
+    mkdirSync(uploadDir, { recursive: true });
+}
+
+const storage = diskStorage({
+    destination: uploadDir,
+    filename: (_req, file, cb) => {
+        const uniqueSuffix = uuidv4();
+        cb(null, `${uniqueSuffix}${extname(file.originalname)}`);
+    },
+});
+
+const fileFilter = (req: any, file: Express.Multer.File, cb: any) => {
+    const user = req.user;
+    if (user) {
+        const isPowerDiv = isPowerContractDivision(user.division);
+        const canUpload =
+            user.role === UserRole.ADMIN ||
+            (isPowerDiv && (user.role === UserRole.MAIN_USER || user.canUpload === true));
+        if (!canUpload) {
+            return cb(
+                new ForbiddenException(
+                    'ທ່ານບໍ່ມີສິດອັບໂຫຼດໄຟລ໌ແນບ (ອະນຸຍາດສະເພາະ ພະແນກສັນຍາຊື້-ຂາຍໄຟຟ້າ ຫຼື Admin)',
+                ),
+                false,
+            );
+        }
+    }
+
+    const allowedExtensions = /\.(pdf|png|jpg|jpeg|gif|webp)$/i;
+    const allowedMimeTypes = /^(application\/pdf|image\/(png|jpeg|jpg|gif|webp))$/i;
+
+    if (!file.originalname.match(allowedExtensions) || !file.mimetype.match(allowedMimeTypes)) {
+        return cb(
+            new BadRequestException(
+                'ອະນຸຍາດສະເພາະໄຟລ໌ PDF ແລະ ຮູບພາບເທົ່ານັ້ນ (Allowed: PDF, PNG, JPG, JPEG, GIF, WEBP)',
+            ),
+            false,
+        );
+    }
+    cb(null, true);
+};
+
+@ApiTags('Power Contract Attachments (ເອກະສານຕິດຄັດສັນຍາຊື້-ຂາຍໄຟຟ້າ)')
+@ApiBearerAuth()
+@Controller('power-contracts')
+@UseGuards(JwtAuthGuard, RolesGuard, DivisionGuard)
+@RequiredModule(SystemModule.POWER_CONTRACTS)
+export class PowerAttachmentsController {
+    constructor(
+        private readonly uploadUseCase: UploadPowerAttachmentUseCase,
+        private readonly downloadUseCase: DownloadPowerAttachmentUseCase,
+        private readonly previewUseCase: PreviewPowerAttachmentUseCase,
+        private readonly getAttachmentsUseCase: GetPowerAttachmentsUseCase,
+        private readonly deleteAttachmentUseCase: DeletePowerAttachmentUseCase,
+    ) { }
+
+    @ApiOperation({ summary: 'ດຶງລາຍການໄຟລ໌ແນບທັງໝົດຂອງສັນຍາຊື້-ຂາຍໄຟຟ້າ' })
+    @Get(':id/attachments')
+    async getAttachments(
+        @Param('id', ParseUUIDPipe) contractId: string,
+        @CurrentUser() user: any,
+    ) {
+        return this.getAttachmentsUseCase.execute(contractId, user);
+    }
+
+    @ApiOperation({
+        summary: 'ອັບໂຫຼດໄຟລ໌ແນບໃສ່ສັນຍາຊື້-ຂາຍໄຟຟ້າ (Admin, Main User ຫຼື ຜູ້ມີສິດ canUpload - ສະເພາະ PDF ແລະ ຮູບພາບ)',
+    })
+    @ApiConsumes('multipart/form-data')
+    @ApiBody({
+        schema: {
+            type: 'object',
+            properties: {
+                file: {
+                    type: 'string',
+                    format: 'binary',
+                },
+            },
+        },
+    })
+    @Post(':id/attachments')
+    @UseInterceptors(
+        FileInterceptor('file', {
+            storage,
+            fileFilter,
+            limits: { fileSize: 25 * 1024 * 1024 }, // 25 MB
+        }),
+    )
+    async uploadFile(
+        @Param('id', ParseUUIDPipe) contractId: string,
+        @UploadedFile() file: Express.Multer.File,
+        @CurrentUser() user: any,
+    ) {
+        return this.uploadUseCase.execute(contractId, file, user);
+    }
+
+    @ApiOperation({ summary: 'ເປີດເບິ່ງໄຟລ໌ແນບເທິງໜ້າເວັບ (Preview PDF / ຮູບພາບ ສຳລັບຜູ້ມີສິດ canView)' })
+    @Get('attachments/:attachmentId/preview')
+    async previewFile(
+        @Param('attachmentId', ParseUUIDPipe) attachmentId: string,
+        @CurrentUser() user: any,
+        @Res() res: Response,
+    ) {
+        const attachment = await this.previewUseCase.execute(attachmentId, user);
+
+        const filePath = isAbsolute(attachment.storageKey)
+            ? attachment.storageKey
+            : resolve(process.cwd(), attachment.storageKey);
+
+        if (!existsSync(filePath)) {
+            return res.status(404).json({ message: 'Physical file not found on server' });
+        }
+
+        const mimeType =
+            attachment.mimeType ||
+            (attachment.fileName?.endsWith('.pdf') ? 'application/pdf' : 'application/octet-stream');
+
+        return res.sendFile(
+            filePath,
+            {
+                headers: {
+                    'Content-Type': mimeType,
+                    'Content-Disposition': `inline; filename="${encodeURIComponent(attachment.fileName)}"`,
+                },
+            },
+            (err) => {
+                if (err && !res.headersSent) {
+                    res.status(500).json({ message: 'Error streaming file' });
+                }
+            },
+        );
+    }
+
+    @ApiOperation({ summary: 'ດາວໂຫຼດໄຟລ໌ແນບ (ສະເພາະ Admin ຫຼື ຜູ້ທີ່ໄດ້ຮັບອະນຸຍາດ canDownload)' })
+    @Get('attachments/:attachmentId/download')
+    async downloadFile(
+        @Param('attachmentId', ParseUUIDPipe) attachmentId: string,
+        @CurrentUser() user: any,
+        @Req() req: Request,
+        @Res() res: Response,
+    ) {
+        const attachment = await this.downloadUseCase.execute(
+            attachmentId,
+            user,
+            req.ip,
+            req.headers['user-agent'] as string,
+        );
+
+        const filePath = isAbsolute(attachment.storageKey)
+            ? attachment.storageKey
+            : resolve(process.cwd(), attachment.storageKey);
+
+        if (!existsSync(filePath)) {
+            return res.status(404).json({ message: 'Physical file not found on server' });
+        }
+
+        const mimeType =
+            attachment.mimeType ||
+            (attachment.fileName?.endsWith('.pdf') ? 'application/pdf' : 'application/octet-stream');
+
+        return res.sendFile(
+            filePath,
+            {
+                headers: {
+                    'Content-Type': mimeType,
+                    'Content-Disposition': `attachment; filename="${encodeURIComponent(attachment.fileName)}"`,
+                },
+            },
+            (err) => {
+                if (err && !res.headersSent) {
+                    res.status(500).json({ message: 'Error downloading file' });
+                }
+            },
+        );
+    }
+
+    @ApiOperation({ summary: 'ລົບໄຟລ໌ແນບ (Admin, Main User ຫຼື ຜູ້ມີສິດ canDelete)' })
+    @Delete('attachments/:attachmentId')
+    async deleteAttachment(
+        @Param('attachmentId', ParseUUIDPipe) attachmentId: string,
+        @CurrentUser() user: any,
+    ) {
+        return this.deleteAttachmentUseCase.execute(attachmentId, user);
+    }
+}
+

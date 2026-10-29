@@ -1,6 +1,7 @@
 import { Injectable, Inject, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { UserRole } from '@prisma/client';
 import * as repoInterface from '../../domain/repositories/legal-case.repository.interface.js';
+import { isDisputeResolutionDivision } from '../../../../core/utils/division-helper.util.js';
 
 @Injectable()
 export class GetLegalCaseByIdUseCase {
@@ -10,8 +11,12 @@ export class GetLegalCaseByIdUseCase {
     ) { }
 
     async execute(idOrCode: string, user: any) {
-        if (user && user.role !== UserRole.ADMIN && user.role !== UserRole.MAIN_USER && user.canView === false) {
-            throw new ForbiddenException('ທ່ານບໍ່ມີສິດເບິ່ງຂໍ້ມູນຄະດີ (Permission Denied: canView required)');
+        if (
+            user &&
+            user.role !== UserRole.ADMIN &&
+            (!isDisputeResolutionDivision(user?.division) || user.canView === false)
+        ) {
+            throw new ForbiddenException('ທ່ານບໍ່ມີສິດເບິ່ງຂໍ້ມູນຄະດີ (ອະນຸຍາດສະເພາະ ພະແນກແກ້ໄຂຂໍ້ຂັດແຍ່ງ ແລະ ດຳເນີນຄະດີ)');
         }
 
         const legalCase = await this.caseRepo.findById(idOrCode);

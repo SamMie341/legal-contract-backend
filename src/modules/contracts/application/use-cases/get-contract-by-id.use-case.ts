@@ -2,6 +2,7 @@ import { Injectable, Inject, NotFoundException, ForbiddenException } from '@nest
 import { UserRole } from '@prisma/client';
 import * as contractRepositoryInterface from '../../domain/repositories/contract.repository.interface.js';
 import { formatContractAuditLog } from '../helpers/contract-history-formatter.helper.js';
+import { isGeneralContractDivision } from '../../../../core/utils/division-helper.util.js';
 
 @Injectable()
 export class GetContractByIdUseCase {
@@ -11,8 +12,12 @@ export class GetContractByIdUseCase {
     ) { }
 
     async execute(id: string, user?: any) {
-        if (user && user.role !== UserRole.ADMIN && user.role !== UserRole.MAIN_USER && user.canView === false) {
-            throw new ForbiddenException('ທ່ານບໍ່ມີສິດເບິ່ງຂໍ້ມູນສັນຍາ (Permission Denied: canView required)');
+        if (
+            user &&
+            user.role !== UserRole.ADMIN &&
+            (!isGeneralContractDivision(user.division) || user.canView === false)
+        ) {
+            throw new ForbiddenException('ທ່ານບໍ່ມີສິດເບິ່ງຂໍ້ມູນສັນຍາ (ອະນຸຍາດສະເພາະ ພະແນກສັນຍາທົ່ວໄປ)');
         }
 
         const contract = await this.contractRepository.findById(id);

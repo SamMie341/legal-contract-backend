@@ -2,6 +2,7 @@ import { Injectable, Inject, NotFoundException, ForbiddenException } from '@nest
 import { UserRole } from '@prisma/client';
 import * as attachmentRepoInterface from '../../domain/repositories/document-attachment.repository.interface.js';
 import * as docRepoInterface from '../../domain/repositories/legal-document.repository.interface.js';
+import { isLegalDocumentDivision } from '../../../../core/utils/division-helper.util.js';
 
 @Injectable()
 export class GetDocumentAttachmentsUseCase {
@@ -13,8 +14,12 @@ export class GetDocumentAttachmentsUseCase {
     ) { }
 
     async execute(legalDocumentId: string, user: any) {
-        if (user && user.role !== UserRole.ADMIN && user.role !== UserRole.MAIN_USER && user.canView === false) {
-            throw new ForbiddenException('ທ່ານບໍ່ມີສິດເບິ່ງໄຟລ໌ແນບ (Permission Denied: canView required)');
+        if (
+            user &&
+            user.role !== UserRole.ADMIN &&
+            (!isLegalDocumentDivision(user?.division) || user.canView === false)
+        ) {
+            throw new ForbiddenException('ທ່ານບໍ່ມີສິດເບິ່ງໄຟລ໌ແນບ (ອະນຸຍາດສະເພາະ ພະແນກນິຕິກຳ)');
         }
 
         const document = await this.legalDocRepo.findById(legalDocumentId);

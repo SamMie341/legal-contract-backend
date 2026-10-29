@@ -40,4 +40,44 @@ export class CreateUserDto {
     @IsOptional()
     @IsBoolean()
     canDownload?: boolean;
+
+    @ApiPropertyOptional({
+        description: 'ພະແນກ (Division) ເຊັ່ນ: ພະແນກສັນຍາທົ່ວໄປ, ພະແນກນິຕິກຳ ແລະ ແກ້ໄຂຂໍ້ຂັດແຍ່ງ (ຫາກບໍ່ລະບຸ ຈະດຶງຈາກ HRM ອັດຕະໂນມັດ)',
+        example: 'ພະແນກສັນຍາທົ່ວໄປ',
+    })
+    @IsOptional()
+    @IsString()
+    division?: string;
+
+    @ApiPropertyOptional({
+        description: 'ຫ້ອງການ/ຝ່າຍ (Department) (ຫາກບໍ່ລະບຸ ຈະດຶງຈາກ HRM ອັດຕະໂນມັດ)',
+        example: 'ຫ້ອງການສຳນັກງານໃຫຍ່',
+    })
+    @IsOptional()
+    @IsString()
+    department?: string;
+
+    @ApiPropertyOptional({
+        description: 'ຊື່ ແລະ ນາມສະກຸນ (ຫາກ HRM ບໍ່ສາມາດເຊື່ອມຕໍ່ໄດ້)',
+        example: 'ສົມສັກ ສີສຸວັນ',
+    })
+    @IsOptional()
+    @IsString()
+    fullName?: string;
+
+    @ApiPropertyOptional({
+        description: 'ອີເມວ (ຫາກ HRM ບໍ່ສາມາດເຊື່ອມຕໍ່ໄດ້)',
+        example: 'somsak@edl.com.la',
+    })
+    @IsOptional()
+    @IsString()
+    email?: string;
+
+    @ApiPropertyOptional({
+        description: 'ເບີໂທລະສັບ',
+        example: '02055555555',
+    })
+    @IsOptional()
+    @IsString()
+    phone?: string;
 }

@@ -2,6 +2,7 @@ import { Injectable, Inject, BadRequestException, ForbiddenException, NotFoundEx
 import { UserRole } from '@prisma/client';
 import { UpdateLegalCaseDto } from '../dto/update-legal-case.dto.js';
 import * as repoInterface from '../../domain/repositories/legal-case.repository.interface.js';
+import { isDisputeResolutionDivision } from '../../../../core/utils/division-helper.util.js';
 
 @Injectable()
 export class UpdateLegalCaseUseCase {
@@ -13,12 +14,12 @@ export class UpdateLegalCaseUseCase {
     async execute(idOrCode: string, dto: UpdateLegalCaseDto, user: any) {
         const isObjectUser = typeof user === 'object' && user !== null;
         if (isObjectUser) {
+            const isDisputeDiv = isDisputeResolutionDivision(user.division);
             const canEdit =
                 user.role === UserRole.ADMIN ||
-                user.role === UserRole.MAIN_USER ||
-                user.canEdit === true;
+                (isDisputeDiv && (user.role === UserRole.MAIN_USER || user.canEdit === true));
             if (!canEdit) {
-                throw new ForbiddenException('ທ່ານບໍ່ມີສິດແກ້ໄຂຂໍ້ມູນຄະດີ (Permission Denied: canEdit required)');
+                throw new ForbiddenException('ທ່ານບໍ່ມີສິດແກ້ໄຂຂໍ້ມູນຄະດີ (ອະນຸຍາດສະເພາະ ພະແນກແກ້ໄຂຂໍ້ຂັດແຍ່ງ ແລະ ດຳເນີນຄະດີ)');
             }
         }
         const userId = isObjectUser ? user.userId : user;

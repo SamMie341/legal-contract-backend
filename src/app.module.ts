@@ -4,6 +4,7 @@ import { AuthModule } from './modules/auth/auth.module.js';
 import { ConfigModule } from '@nestjs/config';
 import { ContractsModule } from './modules/contracts/contracts.module.js';
 import { ContractTypesModule } from './modules/contract-types/contract-types.module.js';
+import { PowerContractsModule } from './modules/power-contracts/power-contracts.module.js';
 import { DepartmentsModule } from './modules/departments/departments.module.js';
 import { LegalDocumentsModule } from './modules/legal-documents/legal-documents.module.js';
 import { LegalCasesModule } from './modules/legal-cases/legal-cases.module.js';
@@ -22,6 +23,7 @@ import { ScheduleModule } from '@nestjs/schedule';
     AuthModule,
     ContractsModule,
     ContractTypesModule,
+    PowerContractsModule,
     DepartmentsModule,
     LegalDocumentsModule,
     LegalCasesModule,

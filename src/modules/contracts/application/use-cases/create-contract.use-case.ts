@@ -2,6 +2,7 @@ import { Injectable, Inject, BadRequestException, ForbiddenException } from '@ne
 import { CreateContractDto } from '../dto/create-contract.dto.js';
 import * as contractRepositoryInterface from '../../domain/repositories/contract.repository.interface.js';
 import { ContractStatus, UserRole } from '@prisma/client';
+import { isGeneralContractDivision } from '../../../../core/utils/division-helper.util.js';
 
 @Injectable()
 export class CreateContractUseCase {
@@ -11,15 +12,15 @@ export class CreateContractUseCase {
     ) { }
 
     async execute(dto: CreateContractDto, user: any) {
-        // 0. ตรวจสอบสิทธิ์การสร้าง/อัปโหลดสัญญา (Admin, Main User หรือผู้มีสิทธิ์ canUpload)
+        // 0. ตรวจสอบสิทธิ์การสร้าง/อัปโหลดสัญญา (Admin, Main User หรือผู้มีสิทธิ์ canUpload ตาม Division)
         const isObjectUser = typeof user === 'object' && user !== null;
         if (isObjectUser) {
+            const isContractDiv = isGeneralContractDivision(user.division);
             const canUpload =
                 user.role === UserRole.ADMIN ||
-                user.role === UserRole.MAIN_USER ||
-                user.canUpload === true;
+                (isContractDiv && (user.role === UserRole.MAIN_USER || user.canUpload === true));
             if (!canUpload) {
-                throw new ForbiddenException('ທ່ານບໍ່ມີສິດສ້າງ ຫຼື ອັບໂຫຼດສັນຍາ (Permission Denied: canUpload required)');
+                throw new ForbiddenException('ທ່ານບໍ່ມີສິດສ້າງ ຫຼື ອັບໂຫຼດສັນຍາ (ອະນຸຍາດສະເພາະ ພະແນກສັນຍາທົ່ວໄປ)');
             }
         }
         const userId = isObjectUser ? user.userId : user;

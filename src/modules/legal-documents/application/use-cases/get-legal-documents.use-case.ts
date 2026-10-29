@@ -2,6 +2,7 @@ import { Injectable, Inject, ForbiddenException } from '@nestjs/common';
 import { UserRole } from '@prisma/client';
 import { QueryLegalDocumentDto } from '../dto/query-legal-document.dto.js';
 import * as repoInterface from '../../domain/repositories/legal-document.repository.interface.js';
+import { isLegalDocumentDivision } from '../../../../core/utils/division-helper.util.js';
 
 @Injectable()
 export class GetLegalDocumentsUseCase {
@@ -11,8 +12,12 @@ export class GetLegalDocumentsUseCase {
     ) { }
 
     async execute(query: QueryLegalDocumentDto, user: any) {
-        if (user && user.role !== UserRole.ADMIN && user.role !== UserRole.MAIN_USER && user.canView === false) {
-            throw new ForbiddenException('ທ່ານບໍ່ມີສິດເບິ່ງຂໍ້ມູນນິຕິກຳ (Permission Denied: canView required)');
+        if (
+            user &&
+            user.role !== UserRole.ADMIN &&
+            (!isLegalDocumentDivision(user?.division) || user.canView === false)
+        ) {
+            throw new ForbiddenException('ທ່ານບໍ່ມີສິດເບິ່ງຂໍ້ມູນນິຕິກຳ (ອະນຸຍາດສະເພາະ ພະແນກນິຕິກຳ)');
         }
 
         const page = query.page || 1;
