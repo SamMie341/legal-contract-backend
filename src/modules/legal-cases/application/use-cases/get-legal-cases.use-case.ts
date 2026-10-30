@@ -17,7 +17,7 @@ export class GetLegalCasesUseCase {
             user.role !== UserRole.ADMIN &&
             (!isDisputeResolutionDivision(user?.division) || user.canView === false)
         ) {
-            throw new ForbiddenException('ທ່ານບໍ່ມີສິດເບິ່ງຂໍ້ມູນຄະດີ (ອະນຸຍາດສະເພາະ ພະແນກແກ້ໄຂຂໍ້ຂັດແຍ່ງ ແລະ ດຳເນີນຄະດີ)');
+            throw new ForbiddenException('ທ່ານບໍ່ມີສິດເບິ່ງຂໍ້ມູນຄະດີ');
         }
 
         const page = query.page || 1;

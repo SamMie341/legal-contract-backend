@@ -17,13 +17,13 @@ export class GetContractByIdUseCase {
             user.role !== UserRole.ADMIN &&
             (!isGeneralContractDivision(user.division) || user.canView === false)
         ) {
-            throw new ForbiddenException('ທ່ານບໍ່ມີສິດເບິ່ງຂໍ້ມູນສັນຍາ (ອະນຸຍາດສະເພາະ ພະແນກສັນຍາທົ່ວໄປ)');
+            throw new ForbiddenException('ທ່ານບໍ່ມີສິດເບິ່ງຂໍ້ມູນສັນຍາ');
         }
 
         const contract = await this.contractRepository.findById(id);
 
         if (!contract) {
-            throw new NotFoundException('ບໍ່ພົບສັນຍາທີ່ຕ້ອງການ (Contract not found)');
+            throw new NotFoundException('ບໍ່ພົບສັນຍາທີ່ຕ້ອງການ');
         }
 
         // Format recent audit logs

@@ -19,12 +19,12 @@ export class GetAttachmentsUseCase {
             user.role !== UserRole.ADMIN &&
             (!isGeneralContractDivision(user.division) || user.canView === false)
         ) {
-            throw new ForbiddenException('ທ່ານບໍ່ມີສິດເບິ່ງຂໍ້ມູນໄຟລ໌ແນບ (ອະນຸຍາດສະເພາະ ພະແນກສັນຍາທົ່ວໄປ)');
+            throw new ForbiddenException('ທ່ານບໍ່ມີສິດເບິ່ງຂໍ້ມູນໄຟລ໌ແນບ');
         }
 
         const contract = await this.contractRepo.findById(contractId);
         if (!contract) {
-            throw new NotFoundException('ບໍ່ພົບສັນຍາ (Contract not found)');
+            throw new NotFoundException('ບໍ່ພົບສັນຍາ');
         }
 
         const attachments = await this.attachmentRepo.findAttachmentsByContractId(contractId);

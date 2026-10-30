@@ -16,12 +16,12 @@ export class DownloadDocumentAttachmentUseCase {
             user && (user.role === UserRole.ADMIN || (isLegalDiv && user.canDownload === true));
 
         if (!canDownload) {
-            throw new ForbiddenException('ທ່ານບໍ່ມີສິດດາວໂຫຼດໄຟລ໌ແນບ (ອະນຸຍາດສະເພາະ ພະແນກນິຕິກຳ ທີ່ມີສິດ canDownload)');
+            throw new ForbiddenException('ທ່ານບໍ່ມີສິດດາວໂຫຼດໄຟລ໌ແນບ');
         }
 
         const attachment = await this.attachmentRepo.findById(attachmentId);
         if (!attachment) {
-            throw new NotFoundException('ບໍ່ພົບໄຟລ໌ແນບ (Attachment not found)');
+            throw new NotFoundException('ບໍ່ພົບໄຟລ໌ແນບ');
         }
 
         return attachment;

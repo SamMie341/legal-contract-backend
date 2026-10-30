@@ -12,13 +12,13 @@ export class CreateDepartmentUseCase {
     async execute(dto: CreateDepartmentDto) {
         const existingName = await this.departmentRepo.findByName(dto.name);
         if (existingName) {
-            throw new ConflictException('ຊື່ຫ້ອງການ/ຝ່າຍ (name) ນີ້ມີໃນລະບົບແລ້ວ');
+            throw new ConflictException('ຊື່ຝ່າຍນີ້ມີໃນລະບົບແລ້ວ');
         }
 
         if (dto.code) {
             const existingCode = await this.departmentRepo.findByCode(dto.code);
             if (existingCode) {
-                throw new ConflictException('ລະຫັດຫ້ອງການ/ຝ່າຍ (code) ນີ້ມີໃນລະບົບແລ້ວ');
+                throw new ConflictException('ລະຫັດຝ່າຍນີ້ມີໃນລະບົບແລ້ວ');
             }
         }
 

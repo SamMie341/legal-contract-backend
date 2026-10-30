@@ -20,7 +20,7 @@ export class CreateContractUseCase {
                 user.role === UserRole.ADMIN ||
                 (isContractDiv && (user.role === UserRole.MAIN_USER || user.canUpload === true));
             if (!canUpload) {
-                throw new ForbiddenException('ທ່ານບໍ່ມີສິດສ້າງ ຫຼື ອັບໂຫຼດສັນຍາ (ອະນຸຍາດສະເພາະ ພະແນກສັນຍາທົ່ວໄປ)');
+                throw new ForbiddenException('ທ່ານບໍ່ມີສິດສ້າງ ຫຼື ອັບໂຫຼດສັນຍາ');
             }
         }
         const userId = isObjectUser ? user.userId : user;
@@ -29,7 +29,7 @@ export class CreateContractUseCase {
         const contractType = await this.contractRepository.findContractTypeById(dto.contractTypeId);
 
         if (!contractType) {
-            throw new BadRequestException('ບໍ່ພົບປະເພດສັນຍາທີ່ເລືອກ (Invalid Contract Type)');
+            throw new BadRequestException('ບໍ່ພົບປະເພດສັນຍາທີ່ເລືອກ');
         }
 
         // 2. Business Logic: คำนวณสถานะเริ่มต้น

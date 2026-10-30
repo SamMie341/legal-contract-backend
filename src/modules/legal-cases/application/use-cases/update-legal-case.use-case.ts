@@ -19,27 +19,27 @@ export class UpdateLegalCaseUseCase {
                 user.role === UserRole.ADMIN ||
                 (isDisputeDiv && (user.role === UserRole.MAIN_USER || user.canEdit === true));
             if (!canEdit) {
-                throw new ForbiddenException('ທ່ານບໍ່ມີສິດແກ້ໄຂຂໍ້ມູນຄະດີ (ອະນຸຍາດສະເພາະ ພະແນກແກ້ໄຂຂໍ້ຂັດແຍ່ງ ແລະ ດຳເນີນຄະດີ)');
+                throw new ForbiddenException('ທ່ານບໍ່ມີສິດແກ້ໄຂຂໍ້ມູນຄະດີ');
             }
         }
         const userId = isObjectUser ? user.userId : user;
 
         const existing = await this.caseRepo.findById(idOrCode);
         if (!existing) {
-            throw new NotFoundException('ບໍ່ພົບຂໍ້ມູນຄະດີ (Legal Case not found)');
+            throw new NotFoundException('ບໍ່ພົບຂໍ້ມູນຄະດີ');
         }
 
         if (dto.caseCode && dto.caseCode !== existing.caseCode) {
             const codeInUse = await this.caseRepo.findByCode(dto.caseCode, existing.internalId);
             if (codeInUse) {
-                throw new BadRequestException(`ລະຫັດຄະດີ '${dto.caseCode}' ມີໃນລະບົບແລ້ວ (Case code already exists)`);
+                throw new BadRequestException(`ລະຫັດຄະດີ '${dto.caseCode}' ມີໃນລະບົບແລ້ວ`);
             }
         }
 
         if (dto.departmentId) {
             const departmentExists = await this.caseRepo.checkDepartmentExists(dto.departmentId);
             if (!departmentExists) {
-                throw new BadRequestException('ບໍ່ພົບຫ້ອງການ/ຝ່າຍທີ່ລະບຸ (Department not found)');
+                throw new BadRequestException('ບໍ່ພົບຫ້ອງການ/ຝ່າຍທີ່ລະບຸ');
             }
         }
 

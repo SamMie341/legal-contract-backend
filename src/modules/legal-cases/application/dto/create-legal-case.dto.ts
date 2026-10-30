@@ -15,13 +15,13 @@ import { CaseType, DisputeStatus } from '@prisma/client';
 
 export class CreateLegalCaseDto {
     @ApiProperty({ description: 'ລະຫັດຄະດີ (Case Code)', example: 'EDL-2026-005' })
-    @IsNotEmpty({ message: 'ກະລຸນາປ້ອນລະຫັດຄະດີ (caseCode is required)' })
+    @IsNotEmpty({ message: 'ກະລຸນາປ້ອນລະຫັດຄະດີ' })
     @IsString()
     @MaxLength(100)
     caseCode: string;
 
     @ApiProperty({ description: 'ຊື່ຈຳເລີຍ ຫຼື ຫົວຂໍ້ຄະດີ', example: 'ບໍລິສັດ ບົວລະພາ ກໍ່ສ້າງ ຈຳກັດ' })
-    @IsNotEmpty({ message: 'ກະລຸນາປ້ອນຊື່ຈຳເລີຍ ຫຼື ຫົວຂໍ້ຄະດີ (defendant is required)' })
+    @IsNotEmpty({ message: 'ກະລຸນາປ້ອນຊື່ຈຳເລີຍ ຫຼື ຫົວຂໍ້ຄະດີ' })
     @IsString()
     @MaxLength(255)
     defendant: string;
@@ -42,7 +42,7 @@ export class CreateLegalCaseDto {
     departmentAction?: string;
 
     @ApiProperty({ description: 'ປະເພດຄະດີ', enum: CaseType, example: CaseType.COMMERCIAL })
-    @IsNotEmpty({ message: 'ກະລຸນາເລືອກປະເພດຄະດີ (caseType is required)' })
+    @IsNotEmpty({ message: 'ກະລຸນາເລືອກປະເພດຄະດີ' })
     @IsEnum(CaseType, { message: 'ປະເພດຄະດີບໍ່ຖືກຕ້ອງ' })
     caseType: CaseType;
 
@@ -108,7 +108,7 @@ export class CreateLegalCaseDto {
     recoveredUsd?: number = 0;
 
     @ApiProperty({ description: 'ວັນທີເລີ່ມຕົ້ນຄະດີ (YYYY-MM-DD)', example: '2026-01-15' })
-    @IsNotEmpty({ message: 'ກະລຸນາປ້ອນວັນທີເລີ່ມຕົ້ນຄະດີ (date is required)' })
+    @IsNotEmpty({ message: 'ກະລຸນາປ້ອນວັນທີເລີ່ມຕົ້ນຄະດີ' })
     @IsDateString({}, { message: 'ວັນທີຕ້ອງເປັນຮູບແບບ YYYY-MM-DD' })
     date: string;
 

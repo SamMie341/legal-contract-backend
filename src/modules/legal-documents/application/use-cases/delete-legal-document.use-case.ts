@@ -18,14 +18,14 @@ export class DeleteLegalDocumentUseCase {
                 user.role === UserRole.ADMIN ||
                 (isLegalDiv && (user.role === UserRole.MAIN_USER || user.canDelete === true));
             if (!canDelete) {
-                throw new ForbiddenException('ທ່ານບໍ່ມີສິດລົບບັນທຶກນິຕິກຳ (ອະນຸຍາດສະເພາະ ພະແນກນິຕິກຳ)');
+                throw new ForbiddenException('ທ່ານບໍ່ມີສິດລົບບັນທຶກນິຕິກຳ');
             }
         }
         const userId = isObjectUser ? user.userId : user;
 
         const existing = await this.legalDocRepo.findById(id);
         if (!existing) {
-            throw new NotFoundException('ບໍ່ພົບຂໍ້ມູນນິຕິກຳ (Legal Document not found)');
+            throw new NotFoundException('ບໍ່ພົບຂໍ້ມູນນິຕິກຳ');
         }
 
         await this.legalDocRepo.softDeleteWithAudit(id, userId);

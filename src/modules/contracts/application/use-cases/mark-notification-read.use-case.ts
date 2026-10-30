@@ -12,7 +12,7 @@ export class MarkNotificationReadUseCase {
         const updatedNoti = await this.notificationRepository.markAsRead(notificationId);
 
         return {
-            message: 'ໝາຍວ່າອ່ານແລ້ວ (Marked as read)',
+            message: 'ໝາຍວ່າອ່ານແລ້ວ',
             data: updatedNoti,
         };
     }

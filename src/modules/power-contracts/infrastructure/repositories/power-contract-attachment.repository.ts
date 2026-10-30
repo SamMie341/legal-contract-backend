@@ -95,6 +95,22 @@ export class PowerContractAttachmentRepository implements IPowerContractAttachme
         ipAddress?: string;
         userAgent?: string;
     }): Promise<PowerContractDownloadLog> {
+        // Debounce / deduplication: If same user downloaded same attachment in the last 3 seconds, skip duplicate logging
+        const threeSecondsAgo = new Date(Date.now() - 3000);
+        const recentLog = await this.prisma.powerContractDownloadLog.findFirst({
+            where: {
+                powerContractId: data.powerContractId,
+                attachmentId: data.attachmentId,
+                userId: data.userId,
+                downloadedAt: { gte: threeSecondsAgo },
+            },
+            orderBy: { downloadedAt: 'desc' },
+        });
+
+        if (recentLog) {
+            return recentLog;
+        }
+
         return this.prisma.$transaction(async (tx) => {
             const log = await tx.powerContractDownloadLog.create({
                 data: {

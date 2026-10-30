@@ -14,11 +14,16 @@ import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger'
 import { UserRole } from '@prisma/client';
 import { JwtAuthGuard } from '../../../core/guards/jwt-auth.guard.js';
 import { RolesGuard } from '../../../core/guards/roles.guard.js';
+import { DivisionGuard } from '../../../core/guards/division.guard.js';
+import { RequiredModule } from '../../../core/decorators/required-module.decorator.js';
+import { SystemModule } from '../../../core/constants/division.constant.js';
 import { Roles } from '../../../core/decorators/roles.decorator.js';
 import { CurrentUser } from '../../../core/decorators/current-user.decorator.js';
 
 import { CreateUserDto } from '../application/dto/create-user.dto.js';
 import { UpdateUserDto } from '../application/dto/update-user.dto.js';
+import { ResetPasswordDto } from '../application/dto/reset-password.dto.js';
+import { ChangePasswordDto } from '../application/dto/change-password.dto.js';
 
 import { GetHrmEmployeeUseCase } from '../application/use-cases/get-hrm-employee.use-case.js';
 import { CreateUserUseCase } from '../application/use-cases/create-user.use-case.js';
@@ -26,11 +31,14 @@ import { GetUsersUseCase } from '../application/use-cases/get-users.use-case.js'
 import { GetUserByIdUseCase } from '../application/use-cases/get-user-by-id.use-case.js';
 import { UpdateUserUseCase } from '../application/use-cases/update-user.use-case.js';
 import { DeleteUserUseCase } from '../application/use-cases/delete-user.use-case.js';
+import { ResetPasswordUseCase } from '../application/use-cases/reset-password.use-case.js';
+import { ChangePasswordUseCase } from '../application/use-cases/change-password.use-case.js';
 
 @ApiTags('Users (ການຈັດການຜູ້ໃຊ້ ແລະ Sync ຈາກ HRM)')
 @ApiBearerAuth()
 @Controller('users')
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(JwtAuthGuard, RolesGuard, DivisionGuard)
+@RequiredModule(SystemModule.USERS)
 @Roles(UserRole.ADMIN)
 export class UsersController {
     constructor(
@@ -40,7 +48,31 @@ export class UsersController {
         private readonly getUserByIdUseCase: GetUserByIdUseCase,
         private readonly updateUserUseCase: UpdateUserUseCase,
         private readonly deleteUserUseCase: DeleteUserUseCase,
+        private readonly resetPasswordUseCase: ResetPasswordUseCase,
+        private readonly changePasswordUseCase: ChangePasswordUseCase,
     ) { }
+
+    @ApiOperation({ summary: 'ປ່ຽນລະຫັດຜ່ານຂອງຕົນເອງ (Change Password - ສຳລັບຜູ້ໃຊ້ທົ່ວໄປ ແລະ Admin)' })
+    @Patch('change-password')
+    @Roles(UserRole.ADMIN, UserRole.MAIN_USER, UserRole.EDITOR, UserRole.VIEWER)
+    @RequiredModule(null)
+    async changePassword(
+        @Body() dto: ChangePasswordDto,
+        @CurrentUser() user: any,
+    ) {
+        return this.changePasswordUseCase.execute(user.userId, dto);
+    }
+
+    @ApiOperation({ summary: 'ຣີເຊັດລະຫັດຜ່ານຂອງຜູ້ໃຊ້ (ສະເພາະ Admin)' })
+    @Roles(UserRole.ADMIN)
+    @Patch(':id/reset-password')
+    async resetPassword(
+        @Param('id', ParseUUIDPipe) id: string,
+        @Body() dto: ResetPasswordDto,
+        @CurrentUser() user: any,
+    ) {
+        return this.resetPasswordUseCase.execute(id, dto, user.userId);
+    }
 
     @ApiOperation({
         summary: 'ຄົ້ນຫາຂໍ້ມູນພະນັກງານຈາກ HRM ດ້ວຍລະຫັດພະນັກງານ (ສຳລັບ Auto-fill ກ່ອນກົດບັນທຶກ)',

@@ -20,7 +20,7 @@ export class GetDepartmentsDropdownUseCase {
         }));
 
         return {
-            message: 'ດຶງຂໍ້ມູນຫ້ອງການ/ຝ່າຍສຳລັບ Dropdown ສຳເລັດ',
+            message: 'ດຶງຂໍ້ມູນຝ່າຍສຳລັບສຳເລັດ',
             total: dropdownData.length,
             data: dropdownData,
         };

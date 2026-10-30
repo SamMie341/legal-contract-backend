@@ -16,12 +16,12 @@ export class PreviewDocumentAttachmentUseCase {
             user.role !== UserRole.ADMIN &&
             (!isLegalDocumentDivision(user?.division) || user.canView === false)
         ) {
-            throw new ForbiddenException('ທ່ານບໍ່ມີສິດເບິ່ງໄຟລ໌ແນບ (ອະນຸຍາດສະເພາະ ພະແນກນິຕິກຳ)');
+            throw new ForbiddenException('ທ່ານບໍ່ມີສິດເບິ່ງໄຟລ໌ແນບ');
         }
 
         const attachment = await this.attachmentRepo.findById(attachmentId);
         if (!attachment) {
-            throw new NotFoundException('ບໍ່ພົບໄຟລ໌ແນບ (Attachment not found)');
+            throw new NotFoundException('ບໍ່ພົບໄຟລ໌ແນບ');
         }
 
         return attachment;

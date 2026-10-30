@@ -12,7 +12,7 @@ export class GetPowerContractByIdUseCase {
         const contract = await this.powerContractRepository.findById(id);
 
         if (!contract) {
-            throw new NotFoundException('ບໍ່ພົບສັນຍາຊື້-ຂາຍໄຟຟ້ານີ້ໃນລະບົບ (Power Contract not found)');
+            throw new NotFoundException('ບໍ່ພົບສັນຍາຊື້-ຂາຍໄຟຟ້ານີ້ໃນລະບົບ');
         }
 
         return {

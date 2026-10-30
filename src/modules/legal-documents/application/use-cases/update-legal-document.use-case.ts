@@ -19,20 +19,20 @@ export class UpdateLegalDocumentUseCase {
                 user.role === UserRole.ADMIN ||
                 (isLegalDiv && (user.role === UserRole.MAIN_USER || user.canEdit === true));
             if (!canEdit) {
-                throw new ForbiddenException('ທ່ານບໍ່ມີສິດແກ້ໄຂນິຕິກຳ (ອະນຸຍາດສະເພາະ ພະແນກນິຕິກຳ)');
+                throw new ForbiddenException('ທ່ານບໍ່ມີສິດແກ້ໄຂນິຕິກຳ');
             }
         }
         const userId = isObjectUser ? user.userId : user;
 
         const existing = await this.legalDocRepo.findById(id);
         if (!existing) {
-            throw new NotFoundException('ບໍ່ພົບຂໍ້ມູນນິຕິກຳ (Legal Document not found)');
+            throw new NotFoundException('ບໍ່ພົບຂໍ້ມູນນິຕິກຳ');
         }
 
         if (dto.departmentId) {
             const departmentExists = await this.legalDocRepo.checkDepartmentExists(dto.departmentId);
             if (!departmentExists) {
-                throw new BadRequestException('ບໍ່ພົບຫ້ອງການ/ຝ່າຍທີ່ລະບຸ (Department not found)');
+                throw new BadRequestException('ບໍ່ພົບຝ່າຍທີ່ລະບຸ');
             }
         }
 

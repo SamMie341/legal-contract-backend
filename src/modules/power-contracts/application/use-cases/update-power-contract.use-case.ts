@@ -21,7 +21,7 @@ export class UpdatePowerContractUseCase {
                 (isPowerDiv && (user.role === UserRole.MAIN_USER || user.canEdit === true));
             if (!canEdit) {
                 throw new ForbiddenException(
-                    'ທ່ານບໍ່ມີສິດແກ້ໄຂຂໍ້ມູນສັນຍາຊື້-ຂາຍໄຟຟ້າ (ອະນຸຍາດສະເພາະ ພະແນກສັນຍາຊື້-ຂາຍໄຟຟ້າ ຫຼື Admin)',
+                    'ທ່ານບໍ່ມີສິດແກ້ໄຂຂໍ້ມູນສັນຍາຊື້-ຂາຍໄຟຟ້າ',
                 );
             }
         }

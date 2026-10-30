@@ -5,18 +5,18 @@ import { DocumentStatus, DocumentType } from '@prisma/client';
 
 export class CreateLegalDocumentDto {
     @ApiProperty({ description: 'ຫົວຂໍ້ / ຊື່ນິຕິກຳ', example: 'ກົດລະບຽບວ່າດ້ວຍການຄຸ້ມຄອງພະນັກງານ' })
-    @IsNotEmpty({ message: 'ກະລຸນາປ້ອນຫົວຂໍ້ / ຊື່ນິຕິກຳ (docTitle is required)' })
+    @IsNotEmpty({ message: 'ກະລຸນາປ້ອນຫົວຂໍ້ / ຊື່ນິຕິກຳ' })
     @IsString()
     @MaxLength(255)
     docTitle: string;
 
     @ApiProperty({ description: 'ປະເພດນິຕິກຳ', enum: DocumentType, example: DocumentType.REGULATION })
-    @IsNotEmpty({ message: 'ກະລຸນາເລືອກປະເພດນິຕິກຳ (docType is required)' })
+    @IsNotEmpty({ message: 'ກະລຸນາເລືອກປະເພດນິຕິກຳ' })
     @IsEnum(DocumentType, { message: 'ປະເພດນິຕິກຳບໍ່ຖືກຕ້ອງ' })
     docType: DocumentType;
 
     @ApiProperty({ description: 'ປີອອກນິຕິກຳ', example: 2026 })
-    @IsNotEmpty({ message: 'ກະລຸນາປ້ອນປີອອກນິຕິກຳ (issueYear is required)' })
+    @IsNotEmpty({ message: 'ກະລຸນາປ້ອນປີອອກນິຕິກຳ' })
     @Type(() => Number)
     @IsInt({ message: 'ປີອອກນິຕິກຳຕ້ອງເປັນຕົວເລກຖ້ວນ' })
     @Min(1950)
@@ -24,7 +24,7 @@ export class CreateLegalDocumentDto {
     issueYear: number;
 
     @ApiProperty({ description: 'ເລກທີ ແລະ ວັນທີອອກນິຕິກຳ', example: 'ເລກທີ 012/ຟຟລ, ລົງວັນທີ 15/01/2026' })
-    @IsNotEmpty({ message: 'ກະລຸນາປ້ອນເລກທີ ແລະ ວັນທີອອກນິຕິກຳ (docNumberDate is required)' })
+    @IsNotEmpty({ message: 'ກະລຸນາປ້ອນເລກທີ ແລະ ວັນທີອອກນິຕິກຳ' })
     @IsString()
     @MaxLength(255)
     docNumberDate: string;
@@ -40,7 +40,7 @@ export class CreateLegalDocumentDto {
     responsiblePerson?: string;
 
     @ApiProperty({ description: 'ID ຂອງຫ້ອງການ/ຝ່າຍທີ່ຮັບຜິດຊອບ (Department UUID)', example: 'a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d' })
-    @IsNotEmpty({ message: 'ກະລຸນາເລືອກຫ້ອງການ/ຝ່າຍ (departmentId is required)' })
+    @IsNotEmpty({ message: 'ກະລຸນາເລືອກຝ່າຍ' })
     @IsUUID('4', { message: 'departmentId ຕ້ອງເປັນ UUID' })
     departmentId: string;
 

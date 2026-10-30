@@ -16,13 +16,13 @@ export class DeleteUserUseCase {
         const user = await this.userRepository.findById(id);
 
         if (!user) {
-            throw new NotFoundException('ບໍ່ພົບຜູ້ໃຊ້ນີ້ໃນລະບົບ (User not found)');
+            throw new NotFoundException('ບໍ່ພົບຜູ້ໃຊ້ນີ້ໃນລະບົບ');
         }
 
         await this.userRepository.softDeleteWithAudit(id, user, currentUserId);
 
         return {
-            message: 'ລົບບັນຊີຜູ້ໃຊ້ສຳເລັດ (User deleted successfully)',
+            message: 'ລົບບັນຊີຜູ້ໃຊ້ສຳເລັດ',
         };
     }
 }

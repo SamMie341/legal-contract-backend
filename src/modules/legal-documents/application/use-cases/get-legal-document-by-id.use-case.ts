@@ -16,12 +16,12 @@ export class GetLegalDocumentByIdUseCase {
             user.role !== UserRole.ADMIN &&
             (!isLegalDocumentDivision(user?.division) || user.canView === false)
         ) {
-            throw new ForbiddenException('ທ່ານບໍ່ມີສິດເບິ່ງຂໍ້ມູນນິຕິກຳ (ອະນຸຍາດສະເພາະ ພະແນກນິຕິກຳ)');
+            throw new ForbiddenException('ທ່ານບໍ່ມີສິດເບິ່ງຂໍ້ມູນນິຕິກຳ');
         }
 
         const document = await this.legalDocRepo.findById(id);
         if (!document) {
-            throw new NotFoundException('ບໍ່ພົບຂໍ້ມູນນິຕິກຳ (Legal Document not found)');
+            throw new NotFoundException('ບໍ່ພົບຂໍ້ມູນນິຕິກຳ');
         }
 
         return {

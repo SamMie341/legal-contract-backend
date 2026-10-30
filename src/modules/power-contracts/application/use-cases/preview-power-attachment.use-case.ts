@@ -19,13 +19,13 @@ export class PreviewPowerAttachmentUseCase {
 
         if (!canView) {
             throw new ForbiddenException(
-                'ທ່ານບໍ່ມີສິດເບິ່ງໄຟລ໌ນີ້ (ອະນຸຍາດສະເພາະ ພະແນກສັນຍາຊື້-ຂາຍໄຟຟ້າ ຫຼື Admin)',
+                'ທ່ານບໍ່ມີສິດເບິ່ງໄຟລ໌ນີ້',
             );
         }
 
         const attachment = await this.attachmentRepo.findAttachmentById(attachmentId);
         if (!attachment) {
-            throw new NotFoundException('ບໍ່ພົບໄຟລ໌ທີ່ຕ້ອງການ (File not found)');
+            throw new NotFoundException('ບໍ່ພົບໄຟລ໌ທີ່ຕ້ອງການ');
         }
 
         return attachment;

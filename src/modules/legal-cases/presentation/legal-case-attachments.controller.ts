@@ -61,7 +61,7 @@ const fileFilter = (req: any, file: Express.Multer.File, cb: any) => {
         if (!canUpload) {
             return cb(
                 new ForbiddenException(
-                    'ທ່ານບໍ່ມີສິດອັບໂຫຼດໄຟລ໌ແນບ (Permission Denied: canUpload required)',
+                    'ທ່ານບໍ່ມີສິດອັບໂຫຼດໄຟລ໌ແນບ',
                 ),
                 false,
             );
@@ -74,7 +74,7 @@ const fileFilter = (req: any, file: Express.Multer.File, cb: any) => {
     if (!file.originalname.match(allowedExtensions) || !file.mimetype.match(allowedMimeTypes)) {
         return cb(
             new BadRequestException(
-                'ອະນຸຍາດສະເພາະໄຟລ໌ PDF ແລະ ຮູບພາບເທົ່ານັ້ນ (Allowed: PDF, PNG, JPG, JPEG, GIF, WEBP)',
+                'ອະນຸຍາດສະເພາະໄຟລ໌ PDF ແລະ ຮູບພາບເທົ່ານັ້ນ (PDF, PNG, JPG, JPEG, GIF, WEBP)',
             ),
             false,
         );
@@ -96,7 +96,7 @@ export class LegalCaseAttachmentsController {
         private readonly deleteAttachmentUseCase: DeleteCaseAttachmentUseCase,
     ) { }
 
-    @ApiOperation({ summary: 'ດຶງລາຍການໄຟລ໌ແນບທັງໝົດຂອງຄະດີ (ລະບຸ UUID ຫຼື caseCode)' })
+    @ApiOperation({ summary: 'ດຶງລາຍການໄຟລ໌ແນບທັງໝົດຂອງຄະດີ' })
     @Get(':id/attachments')
     async getAttachments(
         @Param('id') idOrCode: string,

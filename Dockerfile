@@ -27,6 +27,7 @@ ENV NODE_ENV=production \
     UPLOAD_DIR=/app/uploads/contracts \
     UPLOAD_DIR_LEGAL_DOCS=/app/uploads/legal-documents \
     UPLOAD_DIR_LEGAL_CASES=/app/uploads/legal-cases \
+    POWER_CONTRACT_UPLOAD_DIR=/app/uploads/power-contracts \
     TICKET_UPLOAD_DIR=/app/uploads/tickets
 WORKDIR /app
 
@@ -38,7 +39,7 @@ COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=builder /app/dist ./dist
 
 # โฟลเดอร์เก็บไฟล์อัปโหลด (mount เป็น volume ตอนรัน)
-RUN mkdir -p /app/uploads/contracts /app/uploads/legal-documents /app/uploads/legal-cases /app/uploads/tickets && chown -R node:node /app
+RUN mkdir -p /app/uploads/contracts /app/uploads/legal-documents /app/uploads/legal-cases /app/uploads/power-contracts /app/uploads/tickets && chown -R node:node /app
 USER node
 
 EXPOSE 3001

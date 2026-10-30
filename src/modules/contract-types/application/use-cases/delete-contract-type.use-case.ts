@@ -11,13 +11,13 @@ export class DeleteContractTypeUseCase {
     async execute(id: number) {
         const existing = await this.contractTypeRepo.findById(id);
         if (!existing) {
-            throw new NotFoundException('ບໍ່ພົບປະເພດສັນຍາທີ່ຕ້ອງການລົບ (Contract Type not found)');
+            throw new NotFoundException('ບໍ່ພົບປະເພດສັນຍາທີ່ຕ້ອງການລົບ');
         }
 
         const contractCount = await this.contractTypeRepo.countContractsByTypeId(id);
         if (contractCount > 0) {
             throw new BadRequestException(
-                `ບໍ່ສາມາດລົບປະເພດສັນຍານີ້ໄດ້ ເນື່ອງຈາກມີສັນຍາທີ່ຜູກກັບປະເພດນີ້ຢູ່ ${contractCount} ສະບັບ (ກະລຸນາປິດການໃຊ້ງານ isActive: false ແທນ)`,
+                `ບໍ່ສາມາດລົບປະເພດສັນຍານີ້ໄດ້ ເນື່ອງຈາກມີສັນຍາທີ່ຜູກກັບປະເພດນີ້ຢູ່ ${contractCount} ສະບັບ (ກະລຸນາປິດການໃຊ້ງານແທນ)`,
             );
         }
 

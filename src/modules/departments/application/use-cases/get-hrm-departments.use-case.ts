@@ -38,7 +38,7 @@ export class GetHrmDepartmentsUseCase {
         }));
 
         return {
-            message: 'ດຶງຂໍ້ມູນຫ້ອງການ/ຝ່າຍຈາກ HRM ສຳເລັດ',
+            message: 'ດຶງຂໍ້ມູນຝ່າຍຈາກ HRM ສຳເລັດ',
             total: formatted.length,
             data: formatted,
         };

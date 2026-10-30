@@ -16,7 +16,7 @@ export class GetLegalDocumentDashboardUseCase {
             user.role !== UserRole.ADMIN &&
             (!isLegalDocumentDivision(user?.division) || user.canView === false)
         ) {
-            throw new ForbiddenException('ທ່ານບໍ່ມີສິດເບິ່ງຂໍ້ມູນ Dashboard ນິຕິກຳ (ອະນຸຍາດສະເພາະ ພະແນກນິຕິກຳ)');
+            throw new ForbiddenException('ທ່ານບໍ່ມີສິດເບິ່ງຂໍ້ມູນ Dashboard ນິຕິກຳ');
         }
 
         const stats = await this.legalDocRepo.getDashboardStats();

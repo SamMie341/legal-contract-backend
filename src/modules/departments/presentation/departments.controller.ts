@@ -14,6 +14,9 @@ import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger'
 import { UserRole } from '@prisma/client';
 import { JwtAuthGuard } from '../../../core/guards/jwt-auth.guard.js';
 import { RolesGuard } from '../../../core/guards/roles.guard.js';
+import { DivisionGuard } from '../../../core/guards/division.guard.js';
+import { RequiredModule } from '../../../core/decorators/required-module.decorator.js';
+import { SystemModule } from '../../../core/constants/division.constant.js';
 import { Roles } from '../../../core/decorators/roles.decorator.js';
 
 import { CreateDepartmentDto } from '../application/dto/create-department.dto.js';
@@ -31,7 +34,8 @@ import { SyncDepartmentsUseCase } from '../application/use-cases/sync-department
 @ApiTags('Departments (ການຈັດການຫ້ອງການ/ຝ່າຍ CRUD, Sync HRM & Dropdown)')
 @ApiBearerAuth()
 @Controller('departments')
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(JwtAuthGuard, RolesGuard, DivisionGuard)
+@RequiredModule(SystemModule.DEPARTMENTS)
 export class DepartmentsController {
     constructor(
         private readonly getDepartmentsUseCase: GetDepartmentsUseCase,

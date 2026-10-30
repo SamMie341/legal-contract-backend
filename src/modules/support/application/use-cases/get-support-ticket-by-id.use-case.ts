@@ -13,11 +13,11 @@ export class GetSupportTicketByIdUseCase {
         const ticket = await this.ticketRepo.findById(id);
 
         if (!ticket) {
-            throw new NotFoundException('ບໍ່ພົບລາຍການແຈ້ງບັນຫານີ້ (Ticket not found)');
+            throw new NotFoundException('ບໍ່ພົບລາຍການແຈ້ງບັນຫານີ້');
         }
 
         if (userRole !== UserRole.ADMIN && ticket.reportedById !== userId) {
-            throw new ForbiddenException('ທ່ານບໍ່ມີສິດເບິ່ງລາຍການນີ້ (Forbidden)');
+            throw new ForbiddenException('ທ່ານບໍ່ມີສິດເບິ່ງລາຍການນີ້');
         }
 
         return {

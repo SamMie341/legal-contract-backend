@@ -26,6 +26,9 @@ import type { Response } from 'express';
 import { TicketStatus, UserRole } from '@prisma/client';
 import { JwtAuthGuard } from '../../../core/guards/jwt-auth.guard.js';
 import { RolesGuard } from '../../../core/guards/roles.guard.js';
+import { DivisionGuard } from '../../../core/guards/division.guard.js';
+import { RequiredModule } from '../../../core/decorators/required-module.decorator.js';
+import { SystemModule } from '../../../core/constants/division.constant.js';
 import { Roles } from '../../../core/decorators/roles.decorator.js';
 import { CurrentUser } from '../../../core/decorators/current-user.decorator.js';
 
@@ -62,7 +65,7 @@ const ticketFileFilter = (req: any, file: Express.Multer.File, cb: any) => {
     if (!file.originalname.match(allowedExtensions) || !file.mimetype.match(allowedMimeTypes)) {
         return cb(
             new BadRequestException(
-                'ອະນຸຍາດສະເພາະໄຟລ໌ຮູບພາບ ຫຼື PDF ເທົ່ານັ້ນ (Allowed: PNG, JPG, JPEG, GIF, WEBP, PDF)',
+                'ອະນຸຍາດສະເພາະໄຟລ໌ຮູບພາບ ຫຼື PDF ເທົ່ານັ້ນ (PNG, JPG, JPEG, GIF, WEBP, PDF)',
             ),
             false,
         );
@@ -73,7 +76,8 @@ const ticketFileFilter = (req: any, file: Express.Multer.File, cb: any) => {
 @ApiTags('Support & Contacts (ຊ່ອງທາງຕິດຕໍ່ ແລະ ແຈ້ງບັນຫາ - ຂໍ້ 6)')
 @ApiBearerAuth()
 @Controller('support')
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(JwtAuthGuard, RolesGuard, DivisionGuard)
+@RequiredModule(SystemModule.SUPPORT)
 export class SupportController {
     constructor(
         private readonly getContactChannelsUseCase: GetContactChannelsUseCase,
@@ -166,7 +170,7 @@ export class SupportController {
         const attachmentUrl = result.data.attachmentUrl;
 
         if (!attachmentUrl) {
-            throw new NotFoundException('ລາຍການນີ້ບໍ່ມີໄຟລ໌ແນບ (No attachment for this ticket)');
+            throw new NotFoundException('ລາຍການນີ້ບໍ່ມີໄຟລ໌ແນບ');
         }
 
         const filePath = isAbsolute(attachmentUrl)

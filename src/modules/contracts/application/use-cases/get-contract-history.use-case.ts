@@ -19,13 +19,13 @@ export class GetContractHistoryUseCase {
             user.role !== UserRole.ADMIN &&
             (!isGeneralContractDivision(user.division) || user.canView === false)
         ) {
-            throw new ForbiddenException('ທ່ານບໍ່ມີສິດເບິ່ງປະຫວັດການແກ້ໄຂສັນຍາ (ອະນຸຍາດສະເພາະ ພະແນກສັນຍາທົ່ວໄປ)');
+            throw new ForbiddenException('ທ່ານບໍ່ມີສິດເບິ່ງປະຫວັດການແກ້ໄຂສັນຍາ');
         }
 
         // 2. ກວດສອບວ່າສັນຍານີ້ມີຢູ່ແທ້ບໍ່
         const contract = await this.contractRepository.findById(id);
         if (!contract) {
-            throw new NotFoundException('ບໍ່ພົບສັນຍາທີ່ຕ້ອງການ (Contract not found)');
+            throw new NotFoundException('ບໍ່ພົບສັນຍາທີ່ຕ້ອງການ');
         }
 
         // 3. ຄິດໄລ່ Pagination

@@ -21,18 +21,18 @@ export class UploadDocumentAttachmentUseCase {
                 user.role === UserRole.ADMIN ||
                 (isLegalDiv && (user.role === UserRole.MAIN_USER || user.canUpload === true));
             if (!canUpload) {
-                throw new ForbiddenException('ທ່ານບໍ່ມີສິດອັບໂຫຼດໄຟລ໌ແນບນິຕິກຳ (ອະນຸຍາດສະເພາະ ພະແນກນິຕິກຳ)');
+                throw new ForbiddenException('ທ່ານບໍ່ມີສິດອັບໂຫຼດໄຟລ໌ແນບນິຕິກຳ');
             }
         }
         const userId = isObjectUser ? user.userId : user;
 
         if (!file) {
-            throw new BadRequestException('ກະລຸນາເລືອກໄຟລ໌ (No file provided)');
+            throw new BadRequestException('ກະລຸນາເລືອກໄຟລ໌');
         }
 
         const document = await this.legalDocRepo.findById(legalDocumentId);
         if (!document) {
-            throw new NotFoundException('ບໍ່ພົບຂໍ້ມູນນິຕິກຳ (Legal Document not found)');
+            throw new NotFoundException('ບໍ່ພົບຂໍ້ມູນນິຕິກຳ');
         }
 
         const attachment = await this.attachmentRepo.createAttachment({

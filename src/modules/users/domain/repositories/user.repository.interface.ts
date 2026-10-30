@@ -36,4 +36,11 @@ export interface IUserRepository {
     ): Promise<any>;
     updateWithAudit(id: string, dto: UpdateUserDto, oldUser: any, currentUserId: string): Promise<any>;
     softDeleteWithAudit(id: string, oldUser: any, currentUserId: string): Promise<void>;
+    findUserWithPassword(id: string): Promise<User | null>;
+    updatePasswordWithAudit(
+        id: string,
+        newPasswordHash: string,
+        currentUserId: string,
+        actionType: 'RESET_BY_ADMIN' | 'CHANGED_BY_SELF',
+    ): Promise<void>;
 }

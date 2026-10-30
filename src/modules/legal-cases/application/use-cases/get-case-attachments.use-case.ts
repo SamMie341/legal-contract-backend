@@ -19,12 +19,12 @@ export class GetCaseAttachmentsUseCase {
             user.role !== UserRole.ADMIN &&
             (!isDisputeResolutionDivision(user?.division) || user.canView === false)
         ) {
-            throw new ForbiddenException('ທ່ານບໍ່ມີສິດເບິ່ງໄຟລ໌ແນບ (ອະນຸຍາດສະເພາະ ພະແນກແກ້ໄຂຂໍ້ຂັດແຍ່ງ ແລະ ດຳເນີນຄະດີ)');
+            throw new ForbiddenException('ທ່ານບໍ່ມີສິດເບິ່ງໄຟລ໌ແນບ');
         }
 
         const legalCase = await this.caseRepo.findById(idOrCode);
         if (!legalCase) {
-            throw new NotFoundException('ບໍ່ພົບຂໍ້ມູນຄະດີ (Legal Case not found)');
+            throw new NotFoundException('ບໍ່ພົບຂໍ້ມູນຄະດີ');
         }
 
         const attachments = await this.attachmentRepo.findByLegalCaseId(legalCase.internalId);

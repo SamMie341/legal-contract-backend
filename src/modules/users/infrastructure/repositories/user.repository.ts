@@ -276,4 +276,42 @@ export class UserRepository implements IUserRepository {
             });
         });
     }
+
+    async findUserWithPassword(id: string): Promise<User | null> {
+        return this.prisma.user.findFirst({
+            where: { id, deletedAt: null },
+        });
+    }
+
+    async updatePasswordWithAudit(
+        id: string,
+        newPasswordHash: string,
+        currentUserId: string,
+        actionType: 'RESET_BY_ADMIN' | 'CHANGED_BY_SELF',
+    ): Promise<void> {
+        await this.prisma.$transaction(async (tx) => {
+            const user = await tx.user.update({
+                where: { id },
+                data: { passwordHash: newPasswordHash },
+                select: { id: true, username: true, employeeCode: true },
+            });
+
+            await tx.auditLog.create({
+                data: {
+                    userId: currentUserId,
+                    action: AuditAction.USER_PERMISSION_CHANGE,
+                    oldValues: {
+                        targetUserId: id,
+                        username: user.username,
+                        employeeCode: user.employeeCode,
+                    },
+                    newValues: {
+                        action: actionType,
+                        targetUserId: id,
+                        updatedBy: currentUserId,
+                    },
+                },
+            });
+        });
+    }
 }

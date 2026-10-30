@@ -16,12 +16,12 @@ export class GetLegalCaseByIdUseCase {
             user.role !== UserRole.ADMIN &&
             (!isDisputeResolutionDivision(user?.division) || user.canView === false)
         ) {
-            throw new ForbiddenException('ທ່ານບໍ່ມີສິດເບິ່ງຂໍ້ມູນຄະດີ (ອະນຸຍາດສະເພາະ ພະແນກແກ້ໄຂຂໍ້ຂັດແຍ່ງ ແລະ ດຳເນີນຄະດີ)');
+            throw new ForbiddenException('ທ່ານບໍ່ມີສິດເບິ່ງຂໍ້ມູນຄະດີ');
         }
 
         const legalCase = await this.caseRepo.findById(idOrCode);
         if (!legalCase) {
-            throw new NotFoundException('ບໍ່ພົບຂໍ້ມູນຄະດີ (Legal Case not found)');
+            throw new NotFoundException('ບໍ່ພົບຂໍ້ມູນຄະດີ');
         }
 
         return {

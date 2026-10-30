@@ -12,11 +12,11 @@ export class GetDepartmentByIdUseCase {
         const department = await this.departmentRepo.findById(id);
 
         if (!department) {
-            throw new NotFoundException('ບໍ່ພົບຫ້ອງການ/ຝ່າຍທີ່ຕ້ອງການ (Department not found)');
+            throw new NotFoundException('ບໍ່ພົບຝ່າຍທີ່ຕ້ອງການ');
         }
 
         return {
-            message: 'ດຶງຂໍ້ມູນຫ້ອງການ/ຝ່າຍສຳເລັດ',
+            message: 'ດຶງຂໍ້ມູນຝ່າຍສຳເລັດ',
             data: department,
         };
     }

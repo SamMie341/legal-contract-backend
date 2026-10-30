@@ -3,13 +3,17 @@ import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger'
 import { AuditAction, UserRole } from '@prisma/client';
 import { JwtAuthGuard } from '../../../core/guards/jwt-auth.guard.js';
 import { RolesGuard } from '../../../core/guards/roles.guard.js';
+import { DivisionGuard } from '../../../core/guards/division.guard.js';
+import { RequiredModule } from '../../../core/decorators/required-module.decorator.js';
+import { SystemModule } from '../../../core/constants/division.constant.js';
 import { Roles } from '../../../core/decorators/roles.decorator.js';
 import { GetAuditLogsUseCase } from '../application/use-cases/get-audit-logs.use-case.js';
 
 @ApiTags('Audit Logs (ປະຫວັດການດຳເນີນງານໃນລະບົບ)')
 @ApiBearerAuth()
 @Controller('audit-logs')
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(JwtAuthGuard, RolesGuard, DivisionGuard)
+@RequiredModule(SystemModule.AUDIT_LOGS)
 @Roles(UserRole.ADMIN)
 export class AuditLogsController {
     constructor(private readonly getAuditLogsUseCase: GetAuditLogsUseCase) { }

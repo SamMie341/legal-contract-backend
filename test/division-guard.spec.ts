@@ -1,16 +1,16 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { UserRole } from '@prisma/client';
+import { AuditAction, UserRole } from '@prisma/client';
 import { Division, SystemModule } from '../src/core/constants/division.constant.js';
 import {
     isGeneralContractDivision,
-    isLegalDocumentDivision,
-    isDisputeResolutionDivision,
     isLegalAndDisputeDivision,
     isPowerContractDivision,
     canAccessModule,
     getAccessibleModules,
     assertCanAccessModule,
     normalizeLaoText,
+    resolveModuleFromPath,
+    getRequiredDivisionForModule,
 } from '../src/core/utils/division-helper.util.js';
 import { DivisionGuard } from '../src/core/guards/division.guard.js';
 import { ForbiddenException, ExecutionContext } from '@nestjs/common';
@@ -148,15 +148,76 @@ describe('DivisionHelper (ການແຍກສິດ ແລະ ໂມດູນ�
         });
     });
 
-    describe('assertCanAccessModule', () => {
-        it('should throw ForbiddenException when accessing prohibited module', () => {
-            const contractUser = { role: UserRole.MAIN_USER, division: Division.GENERAL_CONTRACT };
-            expect(() => assertCanAccessModule(contractUser, SystemModule.LEGAL_DOCUMENTS)).toThrow(ForbiddenException);
-            expect(() => assertCanAccessModule(contractUser, SystemModule.LEGAL_CASES)).toThrow(ForbiddenException);
+    describe('resolveModuleFromPath (ດັກຈັບການປ່ຽนແປງ URL Path)', () => {
+        it('should resolve power contracts module from path with or without api prefix', () => {
+            expect(resolveModuleFromPath('/power-contracts')).toBe(SystemModule.POWER_CONTRACTS);
+            expect(resolveModuleFromPath('/api/power-contracts/dashboard')).toBe(SystemModule.POWER_CONTRACTS);
+            expect(resolveModuleFromPath('/api/v1/power-contracts/123/edit')).toBe(SystemModule.POWER_CONTRACTS);
+            expect(resolveModuleFromPath('/power-notifications')).toBe(SystemModule.POWER_CONTRACTS);
+            expect(resolveModuleFromPath('/power-attachments/upload')).toBe(SystemModule.POWER_CONTRACTS);
+        });
 
-            const legalUser = { role: UserRole.MAIN_USER, division: Division.LEGAL_AND_DISPUTE };
-            expect(() => assertCanAccessModule(legalUser, SystemModule.CONTRACTS)).toThrow(ForbiddenException);
-            expect(() => assertCanAccessModule(legalUser, SystemModule.CONTRACT_TYPES)).toThrow(ForbiddenException);
+        it('should resolve general contracts and contract types', () => {
+            expect(resolveModuleFromPath('/contracts')).toBe(SystemModule.CONTRACTS);
+            expect(resolveModuleFromPath('/api/contracts?page=1&limit=10')).toBe(SystemModule.CONTRACTS);
+            expect(resolveModuleFromPath('/notifications')).toBe(SystemModule.CONTRACTS);
+            expect(resolveModuleFromPath('/attachments/download/abc')).toBe(SystemModule.CONTRACTS);
+            expect(resolveModuleFromPath('/contract-types')).toBe(SystemModule.CONTRACT_TYPES);
+            expect(resolveModuleFromPath('/api/contract-types/1')).toBe(SystemModule.CONTRACT_TYPES);
+        });
+
+        it('should resolve legal documents and legal cases', () => {
+            expect(resolveModuleFromPath('/legal-documents')).toBe(SystemModule.LEGAL_DOCUMENTS);
+            expect(resolveModuleFromPath('/api/legal-documents/123')).toBe(SystemModule.LEGAL_DOCUMENTS);
+            expect(resolveModuleFromPath('/document-attachments/preview')).toBe(SystemModule.LEGAL_DOCUMENTS);
+            expect(resolveModuleFromPath('/legal-cases')).toBe(SystemModule.LEGAL_CASES);
+            expect(resolveModuleFromPath('/case-attachments/download')).toBe(SystemModule.LEGAL_CASES);
+        });
+
+        it('should resolve admin and shared modules', () => {
+            expect(resolveModuleFromPath('/users')).toBe(SystemModule.USERS);
+            expect(resolveModuleFromPath('/audit-logs')).toBe(SystemModule.AUDIT_LOGS);
+            expect(resolveModuleFromPath('/departments')).toBe(SystemModule.DEPARTMENTS);
+            expect(resolveModuleFromPath('/support')).toBe(SystemModule.SUPPORT);
+        });
+
+        it('should return null for non-module paths, auth, or invalid paths', () => {
+            expect(resolveModuleFromPath('/auth/login')).toBeNull();
+            expect(resolveModuleFromPath('/auth/me')).toBeNull();
+            expect(resolveModuleFromPath('/api/v1/auth/login')).toBeNull();
+            expect(resolveModuleFromPath('')).toBeNull();
+            expect(resolveModuleFromPath(null)).toBeNull();
+            expect(resolveModuleFromPath(undefined)).toBeNull();
+            expect(resolveModuleFromPath('/random-unknown-path')).toBeNull();
+        });
+    });
+
+    describe('getRequiredDivisionForModule', () => {
+        it('should return correct required division for each module', () => {
+            expect(getRequiredDivisionForModule(SystemModule.CONTRACTS)).toBe(Division.GENERAL_CONTRACT);
+            expect(getRequiredDivisionForModule(SystemModule.CONTRACT_TYPES)).toBe(Division.GENERAL_CONTRACT);
+            expect(getRequiredDivisionForModule(SystemModule.POWER_CONTRACTS)).toBe(Division.POWER_CONTRACTS);
+            expect(getRequiredDivisionForModule(SystemModule.LEGAL_DOCUMENTS)).toBe(Division.LEGAL_AND_DISPUTE);
+            expect(getRequiredDivisionForModule(SystemModule.LEGAL_CASES)).toBe(Division.LEGAL_AND_DISPUTE);
+            expect(getRequiredDivisionForModule(SystemModule.USERS)).toContain('Admin');
+            expect(getRequiredDivisionForModule(SystemModule.DEPARTMENTS)).toContain('All');
+        });
+    });
+
+    describe('assertCanAccessModule', () => {
+        it('should throw ForbiddenException with PATH_DIVISION_MISMATCH when accessing prohibited module', () => {
+            const contractUser = { role: UserRole.MAIN_USER, division: Division.GENERAL_CONTRACT };
+            try {
+                assertCanAccessModule(contractUser, SystemModule.LEGAL_DOCUMENTS, '/api/legal-documents');
+                expect.unreachable('Should have thrown ForbiddenException');
+            } catch (err: any) {
+                expect(err).toBeInstanceOf(ForbiddenException);
+                const response = err.getResponse();
+                expect(response.code).toBe('PATH_DIVISION_MISMATCH');
+                expect(response.details.attemptedPath).toBe('/api/legal-documents');
+                expect(response.details.userDivision).toBe(Division.GENERAL_CONTRACT);
+                expect(response.details.requiredDivision).toBe(Division.LEGAL_AND_DISPUTE);
+            }
         });
 
         it('should not throw when accessing authorized module', () => {
@@ -170,55 +231,169 @@ describe('DivisionHelper (ການແຍກສິດ ແລະ ໂມດູນ�
     });
 });
 
-describe('DivisionGuard', () => {
+describe('DivisionGuard (ກວດສອບສິດ ແລະ ດັກຈັບການປ່ຽນ Path ເພື່ອເຂົ້າເຖິງຂ້າມພະແນກ)', () => {
     let reflector: Reflector;
     let guard: DivisionGuard;
+    let mockPrisma: any;
 
-    const createMockContext = (user: any): ExecutionContext => {
+    const createMockContext = (
+        user: any,
+        options?: { url?: string; method?: string; ip?: string },
+    ): ExecutionContext => {
         return {
             getHandler: vi.fn(),
             getClass: vi.fn(),
             switchToHttp: () => ({
-                getRequest: () => ({ user }),
+                getRequest: () => ({
+                    user,
+                    originalUrl: options?.url || '',
+                    method: options?.method || 'GET',
+                    ip: options?.ip || '127.0.0.1',
+                }),
             }),
         } as unknown as ExecutionContext;
     };
 
     beforeEach(() => {
         reflector = new Reflector();
-        guard = new DivisionGuard(reflector);
+        mockPrisma = {
+            auditLog: {
+                create: vi.fn().mockResolvedValue({ id: 'mock-audit-id' }),
+            },
+        };
+        guard = new DivisionGuard(reflector, mockPrisma);
     });
 
-    it('should allow access if no @RequiredModule is set', () => {
+    it('should allow access if no @RequiredModule and path is not module-specific', () => {
         vi.spyOn(reflector, 'getAllAndOverride').mockReturnValue(undefined);
         const context = createMockContext({ role: UserRole.MAIN_USER });
         expect(guard.canActivate(context)).toBe(true);
     });
 
-    it('should allow Admin to access any required module', () => {
+    it('should allow Admin to access any required module and path', () => {
         vi.spyOn(reflector, 'getAllAndOverride').mockReturnValue(SystemModule.CONTRACTS);
-        const context = createMockContext({ role: UserRole.ADMIN, division: 'IT' });
+        const context = createMockContext(
+            { id: 'admin-uuid', role: UserRole.ADMIN, division: 'IT' },
+            { url: '/api/contracts' },
+        );
         expect(guard.canActivate(context)).toBe(true);
     });
 
-    it('should block Main User from Legal & Dispute division attempting to access Contracts', () => {
+    it('should block Main User from Legal & Dispute division attempting to access Contracts and log security audit', () => {
         vi.spyOn(reflector, 'getAllAndOverride').mockReturnValue(SystemModule.CONTRACTS);
-        const context = createMockContext({ role: UserRole.MAIN_USER, division: Division.LEGAL_AND_DISPUTE });
-        expect(() => guard.canActivate(context)).toThrow(ForbiddenException);
+        const context = createMockContext(
+            {
+                id: 'user-legal-uuid',
+                userId: 'user-legal-uuid',
+                username: 'somchai_legal',
+                role: UserRole.MAIN_USER,
+                division: Division.LEGAL_AND_DISPUTE,
+            },
+            { url: '/contracts/123/edit', method: 'PATCH', ip: '192.168.1.100' },
+        );
+
+        try {
+            guard.canActivate(context);
+            expect.unreachable('Should have thrown ForbiddenException');
+        } catch (err: any) {
+            expect(err).toBeInstanceOf(ForbiddenException);
+            const response = err.getResponse();
+            expect(response.code).toBe('PATH_DIVISION_MISMATCH');
+            expect(response.details.attemptedPath).toBe('/contracts/123/edit');
+            expect(response.details.userDivision).toBe(Division.LEGAL_AND_DISPUTE);
+            expect(response.details.requiredDivision).toBe(Division.GENERAL_CONTRACT);
+
+            // Audit log write should be invoked
+            expect(mockPrisma.auditLog.create).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    data: expect.objectContaining({
+                        userId: 'user-legal-uuid',
+                        action: AuditAction.USER_PERMISSION_CHANGE,
+                        newValues: expect.objectContaining({
+                            alertType: 'PATH_TAMPERING_DETECTED',
+                            attemptedPath: '/contracts/123/edit',
+                            httpMethod: 'PATCH',
+                            requiredDivision: Division.GENERAL_CONTRACT,
+                            targetModule: SystemModule.CONTRACTS,
+                        }),
+                    }),
+                }),
+            );
+        }
+    });
+
+    it('should detect path tampering when user changes URL path even WITHOUT @RequiredModule metadata', () => {
+        vi.spyOn(reflector, 'getAllAndOverride').mockReturnValue(undefined);
+
+        // User belongs to General Contracts, but manually requested /api/legal-cases
+        const context = createMockContext(
+            {
+                id: 'user-contracts-uuid',
+                userId: 'user-contracts-uuid',
+                username: 'kham_contracts',
+                role: UserRole.MAIN_USER,
+                division: Division.GENERAL_CONTRACT,
+            },
+            { url: '/api/legal-cases?status=ACTIVE', method: 'GET', ip: '10.0.0.5' },
+        );
+
+        try {
+            guard.canActivate(context);
+            expect.unreachable('Should have thrown ForbiddenException');
+        } catch (err: any) {
+            expect(err).toBeInstanceOf(ForbiddenException);
+            const response = err.getResponse();
+            expect(response.code).toBe('PATH_DIVISION_MISMATCH');
+            expect(response.details.attemptedPath).toBe('/api/legal-cases?status=ACTIVE');
+            expect(response.details.targetModule).toBe(SystemModule.LEGAL_CASES);
+            expect(response.details.requiredDivision).toBe(Division.LEGAL_AND_DISPUTE);
+
+            // Verify audit log
+            expect(mockPrisma.auditLog.create).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    data: expect.objectContaining({
+                        userId: 'user-contracts-uuid',
+                        action: AuditAction.USER_PERMISSION_CHANGE,
+                        newValues: expect.objectContaining({
+                            alertType: 'PATH_TAMPERING_DETECTED',
+                            attemptedPath: '/api/legal-cases?status=ACTIVE',
+                            targetModule: SystemModule.LEGAL_CASES,
+                        }),
+                    }),
+                }),
+            );
+        }
     });
 
     it('should allow Legal & Dispute user to access Legal Documents and Legal Cases', () => {
         vi.spyOn(reflector, 'getAllAndOverride').mockReturnValue(SystemModule.LEGAL_DOCUMENTS);
-        const context = createMockContext({ role: UserRole.MAIN_USER, division: Division.LEGAL_AND_DISPUTE });
+        const context = createMockContext(
+            { role: UserRole.MAIN_USER, division: Division.LEGAL_AND_DISPUTE },
+            { url: '/legal-documents' },
+        );
         expect(guard.canActivate(context)).toBe(true);
 
         vi.spyOn(reflector, 'getAllAndOverride').mockReturnValue(SystemModule.LEGAL_CASES);
-        expect(guard.canActivate(context)).toBe(true);
+        const contextCases = createMockContext(
+            { role: UserRole.MAIN_USER, division: Division.LEGAL_AND_DISPUTE },
+            { url: '/legal-cases' },
+        );
+        expect(guard.canActivate(contextCases)).toBe(true);
     });
 
-    it('should block Contracts user from accessing Legal Cases', () => {
-        vi.spyOn(reflector, 'getAllAndOverride').mockReturnValue(SystemModule.LEGAL_CASES);
-        const context = createMockContext({ role: UserRole.MAIN_USER, division: Division.GENERAL_CONTRACT });
-        expect(() => guard.canActivate(context)).toThrow(ForbiddenException);
+    it('should allow all divisions to access common modules (departments, support)', () => {
+        vi.spyOn(reflector, 'getAllAndOverride').mockReturnValue(SystemModule.DEPARTMENTS);
+        const contextDep = createMockContext(
+            { role: UserRole.MAIN_USER, division: Division.GENERAL_CONTRACT },
+            { url: '/departments/dropdown' },
+        );
+        expect(guard.canActivate(contextDep)).toBe(true);
+
+        vi.spyOn(reflector, 'getAllAndOverride').mockReturnValue(SystemModule.SUPPORT);
+        const contextSup = createMockContext(
+            { role: UserRole.MAIN_USER, division: Division.POWER_CONTRACTS },
+            { url: '/support/tickets' },
+        );
+        expect(guard.canActivate(contextSup)).toBe(true);
     });
 });

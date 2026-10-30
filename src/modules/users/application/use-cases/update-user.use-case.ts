@@ -13,7 +13,7 @@ export class UpdateUserUseCase {
         const user = await this.userRepository.findById(id);
 
         if (!user) {
-            throw new NotFoundException('ບໍ່ພົບຜູ້ໃຊ້ນີ້ໃນລະບົບ (User not found)');
+            throw new NotFoundException('ບໍ່ພົບຜູ້ໃຊ້ນີ້ໃນລະບົບ');
         }
 
         const updatedUser = await this.userRepository.updateWithAudit(id, dto, user, currentUserId);

@@ -16,7 +16,7 @@ export class GetLegalCaseDashboardUseCase {
             user.role !== UserRole.ADMIN &&
             (!isDisputeResolutionDivision(user?.division) || user.canView === false)
         ) {
-            throw new ForbiddenException('ທ່ານບໍ່ມີສິດເບິ່ງຂໍ້ມູນ Dashboard ຄະດີ (ອະນຸຍາດສະເພາະ ພະແນກແກ້ໄຂຂໍ້ຂັດແຍ່ງ ແລະ ດຳເນີນຄະດີ)');
+            throw new ForbiddenException('ທ່ານບໍ່ມີສິດເບິ່ງຂໍ້ມູນ Dashboard ຄະດີ');
         }
 
         const stats = await this.caseRepo.getDashboardStats();

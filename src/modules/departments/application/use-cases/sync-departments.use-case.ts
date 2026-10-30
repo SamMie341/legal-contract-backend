@@ -38,7 +38,7 @@ export class SyncDepartmentsUseCase {
         }
 
         return {
-            message: 'Sync ຂໍ້ມູນຫ້ອງການ/ຝ່າຍຈາກ HRM ສຳເລັດ',
+            message: 'Sync ຂໍ້ມູນຝ່າຍຈາກ HRM ສຳເລັດ',
             totalFromHrm: hrmDepartments.length,
             createdCount,
             updatedCount,

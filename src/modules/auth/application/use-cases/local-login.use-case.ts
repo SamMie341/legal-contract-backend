@@ -18,18 +18,18 @@ export class LocalLoginUseCase {
         const user = await this.authUserRepository.findByUsernameOrEmpCode(dto.username);
 
         if (!user) {
-            throw new UnauthorizedException('ບໍ່ພົບຜູ້ໃຊ້ນີ້ໃນລະບົບ ກະລຸນາຕິດຕໍ່ຜູ້ດູແລລະບົບ (User not found)');
+            throw new UnauthorizedException('ບໍ່ພົບຜູ້ໃຊ້ນີ້ໃນລະບົບ ກະລຸນາຕິດຕໍ່ຜູ້ດູແລລະບົບ');
         }
 
         // 2. ตรวจสอบรหัสผ่านที่เก็บไว้ในระบบของเราด้วย bcrypt
         const isPasswordValid = await bcrypt.compare(dto.password, user.passwordHash);
 
         if (!isPasswordValid) {
-            throw new UnauthorizedException('ລະຫັດຜ່ານບໍ່ຖືກຕ້ອງ (Invalid credentials)');
+            throw new UnauthorizedException('ລະຫັດຜ່ານບໍ່ຖືກຕ້ອງ');
         }
 
         if (!user.isActive || user.deletedAt) {
-            throw new UnauthorizedException('ບັນຊີຂອງທ່ານຖືກລະງັບ ຫຼື ຖືກລົບແລ້ວ (Account is disabled)');
+            throw new UnauthorizedException('ບັນຊີຂອງທ່ານຖືກລະງັບ ຫຼື ຖືກລົບແລ້ວ');
         }
 
         // 3. อัปเดตเวลาเข้าสู่ระบบล่าสุด (Last Login)

@@ -16,7 +16,7 @@ export class GetContractsUseCase {
             user.role !== UserRole.ADMIN &&
             (!isGeneralContractDivision(user.division) || user.canView === false)
         ) {
-            throw new ForbiddenException('ທ່ານບໍ່ມີສິດເບິ່ງຂໍ້ມູນສັນຍາ (ອະນຸຍາດສະເພາະ ພະແນກສັນຍາທົ່ວໄປ)');
+            throw new ForbiddenException('ທ່ານບໍ່ມີສິດເບິ່ງຂໍ້ມູນສັນຍາ');
         }
 
         const page = Number(query.page) || 1;

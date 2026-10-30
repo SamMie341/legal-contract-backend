@@ -77,7 +77,7 @@ export class CreateUserUseCase {
         );
 
         return {
-            message: hrmEmployee ? 'ເພີ່ມຜູ້ໃຊ້ໂດຍການ Sync ຂໍ້ມູນຈາກ HRM ສຳເລັດ' : 'ເພີ່ມຜູ້ໃຊ້ສຳເລັດ (ຂໍ້ມູນພາຍໃນລະບົບ)',
+            message: hrmEmployee ? 'ເພີ່ມຜູ້ໃຊ້ໂດຍການ Sync ຂໍ້ມູນຈາກ HRM ສຳເລັດ' : 'ເພີ່ມຜູ້ໃຊ້ສຳເລັດ',
             data: newUser,
         };
     }

@@ -17,7 +17,7 @@ export class DeleteContractUseCase {
             user.role === UserRole.ADMIN ||
             (isContractDiv && (user.role === UserRole.MAIN_USER || user.canDelete === true));
         if (!canDelete) {
-            throw new ForbiddenException('ທ່ານບໍ່ມີສິດລົບສັນຍາ (ອະນຸຍາດສະເພາະ ພະແນກສັນຍາທົ່ວໄປ)');
+            throw new ForbiddenException('ທ່ານບໍ່ມີສິດລົບສັນຍາ');
         }
 
         await this.contractRepository.deleteContractWithAudit(id, user.userId);

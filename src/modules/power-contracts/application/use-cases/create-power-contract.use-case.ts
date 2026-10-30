@@ -21,7 +21,7 @@ export class CreatePowerContractUseCase {
                 (isPowerDiv && (user.role === UserRole.MAIN_USER || user.canUpload === true));
             if (!canUpload) {
                 throw new ForbiddenException(
-                    'ທ່ານບໍ່ມີສິດສ້າງ ຫຼື ອັບໂຫຼດສັນຍາຊື້-ຂາຍໄຟຟ້າ (ອະນຸຍາດສະເພາະ ພະແນກສັນຍາຊື້-ຂາຍໄຟຟ້າ ຫຼື Admin)',
+                    'ທ່ານບໍ່ມີສິດສ້າງ ຫຼື ອັບໂຫຼດສັນຍາຊື້-ຂາຍໄຟຟ້າ',
                 );
             }
         }

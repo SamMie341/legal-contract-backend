@@ -19,12 +19,12 @@ export class GetDocumentAttachmentsUseCase {
             user.role !== UserRole.ADMIN &&
             (!isLegalDocumentDivision(user?.division) || user.canView === false)
         ) {
-            throw new ForbiddenException('ທ່ານບໍ່ມີສິດເບິ່ງໄຟລ໌ແນບ (ອະນຸຍາດສະເພາະ ພະແນກນິຕິກຳ)');
+            throw new ForbiddenException('ທ່ານບໍ່ມີສິດເບິ່ງໄຟລ໌ແນບ');
         }
 
         const document = await this.legalDocRepo.findById(legalDocumentId);
         if (!document) {
-            throw new NotFoundException('ບໍ່ພົບຂໍ້ມູນນິຕິກຳ (Legal Document not found)');
+            throw new NotFoundException('ບໍ່ພົບຂໍ້ມູນນິຕິກຳ');
         }
 
         const attachments = await this.attachmentRepo.findByLegalDocumentId(legalDocumentId);

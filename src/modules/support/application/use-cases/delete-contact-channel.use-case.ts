@@ -11,7 +11,7 @@ export class DeleteContactChannelUseCase {
     async execute(id: number) {
         const existing = await this.contactChannelRepo.findById(id);
         if (!existing) {
-            throw new NotFoundException('ບໍ່ພົບຊ່ອງທາງຕິດຕໍ່ນີ້ (Contact channel not found)');
+            throw new NotFoundException('ບໍ່ພົບຊ່ອງທາງຕິດຕໍ່ນີ້');
         }
 
         await this.contactChannelRepo.delete(id);

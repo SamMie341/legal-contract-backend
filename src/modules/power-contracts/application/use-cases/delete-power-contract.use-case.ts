@@ -20,7 +20,7 @@ export class DeletePowerContractUseCase {
                 (isPowerDiv && (user.role === UserRole.MAIN_USER || user.canDelete === true));
             if (!canDelete) {
                 throw new ForbiddenException(
-                    'ທ່ານບໍ່ມີສິດລົບສັນຍາຊື້-ຂາຍໄຟຟ້າ (ອະນຸຍາດສະເພາະ ພະແນກສັນຍາຊື້-ຂາຍໄຟຟ້າ ຫຼື Admin)',
+                    'ທ່ານບໍ່ມີສິດລົບສັນຍາຊື້-ຂາຍໄຟຟ້າ',
                 );
             }
         }
@@ -29,7 +29,7 @@ export class DeletePowerContractUseCase {
         await this.powerContractRepository.deleteContractWithAudit(id, userId);
 
         return {
-            message: 'ລົບສັນຍາຊື້-ຂາຍໄຟຟ້າສຳເລັດ (Soft Delete)',
+            message: 'ລົບສັນຍາຊື້-ຂາຍໄຟຟ້າສຳເລັດ',
         };
     }
 }

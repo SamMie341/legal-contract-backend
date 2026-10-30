@@ -21,18 +21,18 @@ export class UploadCaseAttachmentUseCase {
                 user.role === UserRole.ADMIN ||
                 (isDisputeDiv && (user.role === UserRole.MAIN_USER || user.canUpload === true));
             if (!canUpload) {
-                throw new ForbiddenException('ທ່ານບໍ່ມີສິດອັບໂຫຼດໄຟລ໌ແນບຄະດີ (ອະນຸຍາດສະເພາະ ພະແນກແກ້ໄຂຂໍ້ຂັດແຍ່ງ ແລະ ດຳເນີນຄະດີ)');
+                throw new ForbiddenException('ທ່ານບໍ່ມີສິດອັບໂຫຼດໄຟລ໌ແນບຄະດີ');
             }
         }
         const userId = isObjectUser ? user.userId : user;
 
         if (!file) {
-            throw new BadRequestException('ກະລຸນາເລືອກໄຟລ໌ (No file provided)');
+            throw new BadRequestException('ກະລຸນາເລືອກໄຟລ໌');
         }
 
         const legalCase = await this.caseRepo.findById(idOrCode);
         if (!legalCase) {
-            throw new NotFoundException('ບໍ່ພົບຂໍ້ມູນຄະດີ (Legal Case not found)');
+            throw new NotFoundException('ບໍ່ພົບຂໍ້ມູນຄະດີ');
         }
 
         const attachment = await this.attachmentRepo.createAttachment({

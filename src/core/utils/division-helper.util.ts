@@ -134,14 +134,110 @@ export function getAccessibleModules(
 }
 
 /**
+ * ສົ່ງຄືນຊື່ພະແນກທີ່ຕ້ອງການສຳລັບແຕ່ລະໂມດູນ
+ */
+export function getRequiredDivisionForModule(module: SystemModule): string {
+    switch (module) {
+        case SystemModule.CONTRACTS:
+        case SystemModule.CONTRACT_TYPES:
+            return Division.GENERAL_CONTRACT;
+        case SystemModule.POWER_CONTRACTS:
+            return Division.POWER_CONTRACTS;
+        case SystemModule.LEGAL_DOCUMENTS:
+        case SystemModule.LEGAL_CASES:
+            return Division.LEGAL_AND_DISPUTE;
+        case SystemModule.USERS:
+        case SystemModule.AUDIT_LOGS:
+            return 'Admin Only (ຜູ້ດູແລລະບົບເທົ່ານັ້ນ)';
+        case SystemModule.DEPARTMENTS:
+        case SystemModule.SUPPORT:
+            return 'ທຸກພະແນກ (All Divisions)';
+        default:
+            return 'Admin Only';
+    }
+}
+
+/**
+ * ວິເຄາະຫາໂມດູນຈາກ HTTP Request URL Path ເພື່ອກວດຈັບການປ່ຽນ Path (Path Tampering)
+ */
+export function resolveModuleFromPath(rawPath?: string | null): SystemModule | null {
+    if (!rawPath) return null;
+
+    let cleanPath = rawPath.split('?')[0].split('#')[0].trim();
+    try {
+        cleanPath = decodeURIComponent(cleanPath);
+    } catch {
+        // use cleanPath as-is if malformed percent encoding
+    }
+
+    cleanPath = cleanPath.toLowerCase().replace(/\/+/g, '/');
+    cleanPath = cleanPath.replace(/^\/+|\/+$/g, '');
+    if (!cleanPath) return null;
+
+    const segments = cleanPath.split('/');
+    const filteredSegments = segments.filter((s) => !['api', 'v1', 'v2', 'v3'].includes(s));
+    if (filteredSegments.length === 0) return null;
+
+    const topSegment = filteredSegments[0];
+
+    switch (topSegment) {
+        case 'power-contracts':
+        case 'power-notifications':
+        case 'power-attachments':
+            return SystemModule.POWER_CONTRACTS;
+
+        case 'contract-types':
+            return SystemModule.CONTRACT_TYPES;
+
+        case 'contracts':
+        case 'notifications':
+        case 'attachments':
+            return SystemModule.CONTRACTS;
+
+        case 'legal-documents':
+        case 'document-attachments':
+            return SystemModule.LEGAL_DOCUMENTS;
+
+        case 'legal-cases':
+        case 'case-attachments':
+            return SystemModule.LEGAL_CASES;
+
+        case 'users':
+            if (filteredSegments.includes('change-password')) {
+                return null;
+            }
+            return SystemModule.USERS;
+
+        case 'audit-logs':
+            return SystemModule.AUDIT_LOGS;
+
+        case 'departments':
+            return SystemModule.DEPARTMENTS;
+
+        case 'support':
+            return SystemModule.SUPPORT;
+
+        default:
+            return null;
+    }
+}
+
+/**
  * ບັງຄັບກວດສອບສິດການເຂົ້າເຖິງໂມດູນ ຫາກບໍ່ມີສິດຈະ Throw ForbiddenException ທັນທີ
  */
 export function assertCanAccessModule(
     user: { role?: UserRole; division?: string | null } | null | undefined,
     module: SystemModule,
+    attemptedPath?: string,
 ): void {
     if (!user) {
-        throw new ForbiddenException('ກະລຸນາເຂົ້າສູ່ລະບົບກ່ອນ (Unauthorized)');
+        throw new ForbiddenException({
+            statusCode: 403,
+            error: 'Forbidden',
+            code: 'UNAUTHORIZED_ACCESS',
+            message: 'ກະລຸນາເຂົ້າສູ່ລະບົບກ່ອນ (Unauthorized)',
+            details: { attemptedPath: attemptedPath || null, targetModule: module },
+        });
     }
 
     if (user.role === UserRole.ADMIN) {
@@ -149,24 +245,18 @@ export function assertCanAccessModule(
     }
 
     if (!canAccessModule(user, module)) {
-        if (module === SystemModule.CONTRACTS || module === SystemModule.CONTRACT_TYPES) {
-            throw new ForbiddenException(
-                `ທ່ານບໍ່ມີສິດເຂົ້າເຖິງໂມດູນສັນຍາ (ອະນຸຍາດສະເພາະ ${Division.GENERAL_CONTRACT})`,
-            );
-        }
-
-        if (module === SystemModule.POWER_CONTRACTS) {
-            throw new ForbiddenException(
-                `ທ່ານບໍ່ມີສິດເຂົ້າເຖິງໂມດູນສັນຍາຊື້-ຂາຍໄຟຟ້າ (ອະນຸຍາດສະເພາະ ${Division.POWER_CONTRACTS})`,
-            );
-        }
-
-        if (module === SystemModule.LEGAL_DOCUMENTS || module === SystemModule.LEGAL_CASES) {
-            throw new ForbiddenException(
-                `ທ່ານບໍ່ມີສິດເຂົ້າເຖິງໂມດູນນີ້ (ອະນຸຍາດສະເພາະ ${Division.LEGAL_AND_DISPUTE})`,
-            );
-        }
-
-        throw new ForbiddenException('ທ່ານບໍ່ມີສິດເຂົ້າເຖິງໂມດູນນີ້ (Forbidden: Access Denied)');
+        const requiredDivision = getRequiredDivisionForModule(module);
+        throw new ForbiddenException({
+            statusCode: 403,
+            error: 'Forbidden',
+            code: 'PATH_DIVISION_MISMATCH',
+            message: `ທ່ານບໍ່ມີສິດເຂົ້າເຖິງໂມດູນນີ້ ເນື່ອງຈາກສັງກັດພະແນກບໍ່ກົງກັນ (ອະນຸຍາດສະເພາະ: ${requiredDivision})`,
+            details: {
+                attemptedPath: attemptedPath || null,
+                userDivision: user.division || null,
+                requiredDivision,
+                targetModule: module,
+            },
+        });
     }
 }

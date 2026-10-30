@@ -12,7 +12,7 @@ export class GetContractTypeByIdUseCase {
         const contractType = await this.contractTypeRepo.findById(id);
 
         if (!contractType) {
-            throw new NotFoundException('ບໍ່ພົບປະເພດສັນຍາທີ່ຕ້ອງການ (Contract Type not found)');
+            throw new NotFoundException('ບໍ່ພົບປະເພດສັນຍາທີ່ຕ້ອງການ');
         }
 
         return {

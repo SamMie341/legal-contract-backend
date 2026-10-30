@@ -14,7 +14,7 @@ export class GetPowerAttachmentsUseCase {
     async execute(powerContractId: string, _user?: any) {
         const contract = await this.contractRepo.findById(powerContractId);
         if (!contract) {
-            throw new NotFoundException('ບໍ່ພົບສັນຍາຊື້-ຂາຍໄຟຟ້າ (Power Contract not found)');
+            throw new NotFoundException('ບໍ່ພົບສັນຍາຊື້-ຂາຍໄຟຟ້າ');
         }
 
         const attachments = await this.attachmentRepo.findAttachmentsByContractId(powerContractId);

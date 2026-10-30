@@ -18,14 +18,14 @@ export class DeleteLegalCaseUseCase {
                 user.role === UserRole.ADMIN ||
                 (isDisputeDiv && (user.role === UserRole.MAIN_USER || user.canDelete === true));
             if (!canDelete) {
-                throw new ForbiddenException('ທ່ານບໍ່ມີສິດລົບບັນທຶກຄະດີ (ອະນຸຍາດສະເພາະ ພະແນກແກ້ໄຂຂໍ້ຂັດແຍ່ງ ແລະ ດຳເນີນຄະດີ)');
+                throw new ForbiddenException('ທ່ານບໍ່ມີສິດລົບບັນທຶກຄະດີ');
             }
         }
         const userId = isObjectUser ? user.userId : user;
 
         const existing = await this.caseRepo.findById(idOrCode);
         if (!existing) {
-            throw new NotFoundException('ບໍ່ພົບຂໍ້ມູນຄະດີ (Legal Case not found)');
+            throw new NotFoundException('ບໍ່ພົບຂໍ້ມູນຄະດີ');
         }
 
         await this.caseRepo.softDeleteWithAudit(existing.internalId, userId);

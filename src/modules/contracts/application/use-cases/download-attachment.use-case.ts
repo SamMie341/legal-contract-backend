@@ -16,7 +16,7 @@ export class DownloadAttachmentUseCase {
         const isAuthorizedUser = isGeneralContractDivision(user?.division) && user.canDownload === true;
 
         if (!isAdmin && !isAuthorizedUser) {
-            throw new ForbiddenException('ທ່ານບໍ່ມີສິດດາວໂຫຼດໄຟລ໌ນີ້ (ອະນຸຍາດສະເພາະ ພະແນກສັນຍາທົ່ວໄປ ທີ່ມີສິດ canDownload)');
+            throw new ForbiddenException('ທ່ານບໍ່ມີສິດດາວໂຫຼດໄຟລ໌ນີ້');
         }
 
         // 2. ค้นหาไฟล์ในระบบ

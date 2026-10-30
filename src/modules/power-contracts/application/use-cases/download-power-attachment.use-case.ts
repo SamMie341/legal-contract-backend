@@ -19,14 +19,14 @@ export class DownloadPowerAttachmentUseCase {
 
         if (!isAdmin && !isAuthorizedUser) {
             throw new ForbiddenException(
-                'ທ່ານບໍ່ມີສິດດາວໂຫຼດໄຟລ໌ນີ້ (ອະນຸຍາດສະເພາະ ພະແນກສັນຍາຊື້-ຂາຍໄຟຟ້າ ທີ່ມີສິດ canDownload ຫຼື Admin)',
+                'ທ່ານບໍ່ມີສິດດາວໂຫຼດໄຟລ໌ນີ້',
             );
         }
 
         // 2. ຄົ້ນຫາໄຟລ໌ໃນລະບົບ
         const attachment = await this.attachmentRepo.findAttachmentById(attachmentId);
         if (!attachment) {
-            throw new NotFoundException('ບໍ່ພົບໄຟລ໌ທີ່ຕ້ອງການ (File not found)');
+            throw new NotFoundException('ບໍ່ພົບໄຟລ໌ທີ່ຕ້ອງການ');
         }
 
         // 3. ບັນທຶກປະຫວັດການດາວໂຫຼດ

@@ -21,16 +21,16 @@ export class UploadAttachmentUseCase {
                 user.role === UserRole.ADMIN ||
                 (isContractDiv && (user.role === UserRole.MAIN_USER || user.canUpload === true));
             if (!canUpload) {
-                throw new ForbiddenException('ທ່ານບໍ່ມີສິດອັບໂຫຼດໄຟລ໌ແນບສັນຍາ (ອະນຸຍາດສະເພາະ ພະແນກສັນຍາທົ່ວໄປ)');
+                throw new ForbiddenException('ທ່ານບໍ່ມີສິດອັບໂຫຼດໄຟລ໌ແນບສັນຍາ');
             }
         }
         const userId = isObjectUser ? user.userId : user;
 
-        if (!file) throw new BadRequestException('ກະລຸນາເລືອກໄຟລ໌ (No file provided)');
+        if (!file) throw new BadRequestException('ກະລຸນາເລືອກໄຟລ໌');
 
         // 1. เช็คว่าสัญญาที่ระบุมีอยู่จริงไหม
         const contract = await this.contractRepo.findById(contractId);
-        if (!contract) throw new NotFoundException('ບໍ່ພົບສັນຍາ (Contract not found)');
+        if (!contract) throw new NotFoundException('ບໍ່ພົບສັນຍາ');
 
         // 2. บันทึกข้อมูลไฟล์ลง DB
         const attachment = await this.attachmentRepo.createAttachment({

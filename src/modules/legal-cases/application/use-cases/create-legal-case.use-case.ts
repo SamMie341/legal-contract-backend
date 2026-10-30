@@ -19,20 +19,20 @@ export class CreateLegalCaseUseCase {
                 user.role === UserRole.ADMIN ||
                 (isDisputeDiv && (user.role === UserRole.MAIN_USER || user.canUpload === true));
             if (!canUpload) {
-                throw new ForbiddenException('ທ່ານບໍ່ມີສິດສ້າງບັນທຶກຄະດີ (ອະນຸຍາດສະເພາະ ພະແນກແກ້ໄຂຂໍ້ຂັດແຍ່ງ ແລະ ດຳເນີນຄະດີ)');
+                throw new ForbiddenException('ທ່ານບໍ່ມີສິດສ້າງບັນທຶກຄະດີ');
             }
         }
         const userId = isObjectUser ? user.userId : user;
 
         const existingCode = await this.caseRepo.findByCode(dto.caseCode);
         if (existingCode) {
-            throw new BadRequestException(`ລະຫັດຄະດີ '${dto.caseCode}' ມີໃນລະບົບແລ້ວ (Case code already exists)`);
+            throw new BadRequestException(`ລະຫັດຄະດີ '${dto.caseCode}' ມີໃນລະບົບແລ້ວ`);
         }
 
         if (dto.departmentId) {
             const departmentExists = await this.caseRepo.checkDepartmentExists(dto.departmentId);
             if (!departmentExists) {
-                throw new BadRequestException('ບໍ່ພົບຫ້ອງການ/ຝ່າຍທີ່ລະບຸ (Department not found)');
+                throw new BadRequestException('ບໍ່ພົບຝ່າຍທີ່ລະບຸ');
             }
         }
 

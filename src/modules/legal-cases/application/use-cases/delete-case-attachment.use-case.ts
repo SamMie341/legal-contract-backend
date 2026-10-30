@@ -18,13 +18,13 @@ export class DeleteCaseAttachmentUseCase {
                 user.role === UserRole.ADMIN ||
                 (isDisputeDiv && (user.role === UserRole.MAIN_USER || user.canDelete === true));
             if (!canDelete) {
-                throw new ForbiddenException('ທ່ານບໍ່ມີສິດລົບໄຟລ໌ແນບ (ອະນຸຍາດສະເພາະ ພະແນກແກ້ໄຂຂໍ້ຂັດແຍ່ງ ແລະ ດຳເນີນຄະດີ)');
+                throw new ForbiddenException('ທ່ານບໍ່ມີສິດລົບໄຟລ໌ແນບ');
             }
         }
 
         const attachment = await this.attachmentRepo.findById(attachmentId);
         if (!attachment) {
-            throw new NotFoundException('ບໍ່ພົບໄຟລ໌ແນບ (Attachment not found)');
+            throw new NotFoundException('ບໍ່ພົບໄຟລ໌ແນບ');
         }
 
         await this.attachmentRepo.softDelete(attachmentId);

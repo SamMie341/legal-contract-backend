@@ -20,7 +20,7 @@ export class GetContractTypesDropdownUseCase {
         }));
 
         return {
-            message: 'ດຶງຂໍ້ມູນປະເພດສັນຍາສຳລັບ Dropdown ສຳເລັດ',
+            message: 'ດຶງຂໍ້ມູນປະເພດສັນຍາສຳລັບສຳເລັດ',
             total: dropdownData.length,
             data: dropdownData,
         };

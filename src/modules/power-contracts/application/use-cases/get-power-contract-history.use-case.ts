@@ -13,7 +13,7 @@ export class GetPowerContractHistoryUseCase {
     async execute(contractId: string, query: GetPowerContractHistoryDto, _user?: any) {
         const contract = await this.powerContractRepository.findById(contractId);
         if (!contract) {
-            throw new NotFoundException('ບໍ່ພົບສັນຍາຊື້-ຂາຍໄຟຟ້ານີ້ໃນລະບົບ (Power Contract not found)');
+            throw new NotFoundException('ບໍ່ພົບສັນຍາຊື້-ຂາຍໄຟຟ້ານີ້ໃນລະບົບ');
         }
 
         const page = Number(query.page) || 1;

@@ -18,14 +18,14 @@ export class UpdateContractUseCase {
             user.role === UserRole.ADMIN ||
             (isContractDiv && (user.role === UserRole.MAIN_USER || user.canEdit === true));
         if (!canEdit) {
-            throw new ForbiddenException('ທ່ານບໍ່ມີສິດແກ້ໄຂຂໍ້ມູນສັນຍາ (ອະນຸຍາດສະເພາະ ພະແນກສັນຍາທົ່ວໄປ)');
+            throw new ForbiddenException('ທ່ານບໍ່ມີສິດແກ້ໄຂຂໍ້ມູນສັນຍາ');
         }
 
         // 2. ถ้ามีการเปลี่ยนประเภทสัญญา ให้ตรวจสอบว่าประเภทใหม่มีอยู่จริง
         if (dto.contractTypeId) {
             const contractType = await this.contractRepository.findContractTypeById(dto.contractTypeId);
             if (!contractType) {
-                throw new BadRequestException('ບໍ່ພົບປະເພດສັນຍາທີ່ເລືອກ (Invalid Contract Type)');
+                throw new BadRequestException('ບໍ່ພົບປະເພດສັນຍາທີ່ເລືອກ');
             }
         }
 

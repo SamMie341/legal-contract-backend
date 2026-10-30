@@ -11,13 +11,13 @@ export class DeleteDepartmentUseCase {
     async execute(id: string) {
         const existing = await this.departmentRepo.findById(id);
         if (!existing) {
-            throw new NotFoundException('ບໍ່ພົບຫ້ອງການ/ຝ່າຍທີ່ຕ້ອງການລົບ (Department not found)');
+            throw new NotFoundException('ບໍ່ພົບຝ່າຍທີ່ຕ້ອງການລົບ');
         }
 
         const usage = await this.departmentRepo.countUsageById(id);
         if (usage.legalDocumentsCount > 0 || usage.legalCasesCount > 0) {
             throw new BadRequestException(
-                `ບໍ່ສາມາດລົບຫ້ອງການ/ຝ່າຍນີ້ໄດ້ ເນື່ອງຈາກມີນິຕິກຳ (${usage.legalDocumentsCount}) ຫຼື ຄະດີ (${usage.legalCasesCount}) ຜູກມັດຢູ່ (ກະລຸນາປິດການໃຊ້ງານ isActive: false ແທນ)`,
+                `ບໍ່ສາມາດລົບຝ່າຍນີ້ໄດ້ ເນື່ອງຈາກມີນິຕິກຳ (${usage.legalDocumentsCount}) ຫຼື ຄະດີ (${usage.legalCasesCount}) ຜູກມັດຢູ່ (ກະລຸນາປິດການໃຊ້ງານແທນ)`,
             );
         }
 

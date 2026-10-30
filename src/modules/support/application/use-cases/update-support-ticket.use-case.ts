@@ -14,7 +14,7 @@ export class UpdateSupportTicketUseCase {
         const ticket = await this.ticketRepo.findById(id);
 
         if (!ticket) {
-            throw new NotFoundException('ບໍ່ພົບລາຍການແຈ້ງບັນຫານີ້ (Ticket not found)');
+            throw new NotFoundException('ບໍ່ພົບລາຍການແຈ້ງບັນຫານີ້');
         }
 
         let resolvedAt: Date | undefined;

@@ -17,7 +17,7 @@ export class GetLegalDocumentsUseCase {
             user.role !== UserRole.ADMIN &&
             (!isLegalDocumentDivision(user?.division) || user.canView === false)
         ) {
-            throw new ForbiddenException('ທ່ານບໍ່ມີສິດເບິ່ງຂໍ້ມູນນິຕິກຳ (ອະນຸຍາດສະເພາະ ພະແນກນິຕິກຳ)');
+            throw new ForbiddenException('ທ່ານບໍ່ມີສິດເບິ່ງຂໍ້ມູນນິຕິກຳ');
         }
 
         const page = query.page || 1;

@@ -22,17 +22,17 @@ export class UploadPowerAttachmentUseCase {
                 (isPowerDiv && (user.role === UserRole.MAIN_USER || user.canUpload === true));
             if (!canUpload) {
                 throw new ForbiddenException(
-                    'ທ່ານບໍ່ມີສິດອັບໂຫຼດໄຟລ໌ແນບສັນຍາຊື້-ຂາຍໄຟຟ້າ (ອະນຸຍາດສະເພາະ ພະແນກສັນຍາຊື້-ຂາຍໄຟຟ້າ ຫຼື Admin)',
+                    'ທ່ານບໍ່ມີສິດອັບໂຫຼດໄຟລ໌ແນບສັນຍາຊື້-ຂາຍໄຟຟ້າ',
                 );
             }
         }
         const userId = isObjectUser ? user.userId : user;
 
-        if (!file) throw new BadRequestException('ກະລຸນາເລືອກໄຟລ໌ (No file provided)');
+        if (!file) throw new BadRequestException('ກະລຸນາເລືອກໄຟລ໌');
 
         // 1. ກວດສອບວ່າສັນຍາມີຈິງ ຫຼື ບໍ່
         const contract = await this.powerContractRepo.findById(powerContractId);
-        if (!contract) throw new NotFoundException('ບໍ່ພົບສັນຍາຊື້-ຂາຍໄຟຟ້າ (Power Contract not found)');
+        if (!contract) throw new NotFoundException('ບໍ່ພົບສັນຍາຊື້-ຂາຍໄຟຟ້າ');
 
         // 2. ບັນທຶກຂໍ້ມູນໄຟລ໌ລົງຖານຂໍ້ມູນ
         const attachment = await this.attachmentRepo.createAttachment({

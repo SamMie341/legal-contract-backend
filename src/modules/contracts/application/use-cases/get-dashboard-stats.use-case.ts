@@ -16,7 +16,7 @@ export class GetDashboardStatsUseCase {
             user.role !== UserRole.ADMIN &&
             (!isGeneralContractDivision(user.division) || user.canView === false)
         ) {
-            throw new ForbiddenException('ທ່ານບໍ່ມີສິດເບິ່ງສະຖິຕິສັນຍາ (ອະນຸຍາດສະເພາະ ພະແນກສັນຍາທົ່ວໄປ)');
+            throw new ForbiddenException('ທ່ານບໍ່ມີສິດເບິ່ງສະຖິຕິສັນຍາ');
         }
 
         const stats = await this.contractRepository.getDashboardStats();

@@ -16,7 +16,7 @@ export class DownloadCaseAttachmentUseCase {
             user && (user.role === UserRole.ADMIN || (isDisputeDiv && user.canDownload === true));
 
         if (!canDownload) {
-            throw new ForbiddenException('ທ່ານບໍ່ມີສິດດາວໂຫຼດໄຟລ໌ແນບ (ອະນຸຍາດສະເພາະ ພະແນກແກ້ໄຂຂໍ້ຂັດແຍ່ງ ແລະ ດຳເນີນຄະດີ ທີ່ມີສິດ canDownload)');
+            throw new ForbiddenException('ທ່ານບໍ່ມີສິດດາວໂຫຼດໄຟລ໌ແນບ');
         }
 
         const attachment = await this.attachmentRepo.findById(attachmentId);

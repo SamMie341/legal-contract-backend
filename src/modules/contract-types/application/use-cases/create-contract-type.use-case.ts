@@ -13,7 +13,7 @@ export class CreateContractTypeUseCase {
         const existing = await this.contractTypeRepo.findByNameLo(dto.nameLo);
 
         if (existing) {
-            throw new ConflictException('ຊື່ປະເພດສັນຍາ (nameLo) ນີ້ມີໃນລະບົບແລ້ວ');
+            throw new ConflictException('ຊື່ປະເພດສັນຍານີ້ມີໃນລະບົບແລ້ວ');
         }
 
         const created = await this.contractTypeRepo.create(dto);

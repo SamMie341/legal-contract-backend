@@ -19,7 +19,7 @@ export class DeletePowerAttachmentUseCase {
                 (isPowerDiv && (user.role === UserRole.MAIN_USER || user.canDelete === true));
             if (!canDelete) {
                 throw new ForbiddenException(
-                    'ທ່ານບໍ່ມີສິດລົບໄຟລ໌ແນບ (ອະນຸຍາດສະເພາະ ພະແນກສັນຍາຊື້-ຂາຍໄຟຟ້າ ຫຼື Admin)',
+                    'ທ່ານບໍ່ມີສິດລົບໄຟລ໌ແນບ',
                 );
             }
         }
@@ -27,7 +27,7 @@ export class DeletePowerAttachmentUseCase {
 
         const attachment = await this.attachmentRepo.findAttachmentById(attachmentId);
         if (!attachment) {
-            throw new NotFoundException('ບໍ່ພົບໄຟລ໌ທີ່ຕ້ອງການລົບ (Attachment not found)');
+            throw new NotFoundException('ບໍ່ພົບໄຟລ໌ທີ່ຕ້ອງການລົບ');
         }
 
         await this.attachmentRepo.deleteAttachment(attachmentId, userId);

@@ -18,7 +18,7 @@ export class PreviewAttachmentUseCase {
             (isContractDiv && (user.role === UserRole.MAIN_USER || user.canView !== false));
 
         if (!canView) {
-            throw new ForbiddenException('ທ່ານບໍ່ມີສິດເບິ່ງໄຟລ໌ນີ້ (ອະນຸຍາດສະເພາະ ພະແນກສັນຍາທົ່ວໄປ)');
+            throw new ForbiddenException('ທ່ານບໍ່ມີສິດເບິ່ງໄຟລ໌ນີ້');
         }
 
         // 2. ค้นหาไฟล์ในระบบ

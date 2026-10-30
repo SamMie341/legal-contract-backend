@@ -11,12 +11,12 @@ export class CreateUserDto {
     @IsNotEmpty()
     employeeCode: string;
 
-    @ApiPropertyOptional({ enum: UserRole, default: UserRole.VIEWER, description: 'ບົດບາດ (Role)' })
+    @ApiPropertyOptional({ enum: UserRole, default: UserRole.VIEWER, description: 'ບົດບາດ' })
     @IsOptional()
     @IsEnum(UserRole)
     role?: UserRole;
 
-    @ApiPropertyOptional({ default: true, description: 'ສິດທິ: ເບິ່ງຂໍ້ມູນ (canView)' })
+    @ApiPropertyOptional({ default: true, description: 'ສິດທິ: ເບິ່ງຂໍ້ມູນ' })
     @IsOptional()
     @IsBoolean()
     canView?: boolean;

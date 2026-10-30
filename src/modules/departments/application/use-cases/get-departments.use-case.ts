@@ -20,7 +20,7 @@ export class GetDepartmentsUseCase {
         });
 
         return {
-            message: 'ດຶງລາຍການຫ້ອງການ/ຝ່າຍສຳເລັດ',
+            message: 'ດຶງລາຍການຝ່າຍສຳເລັດ',
             total: departments.length,
             data: departments,
         };

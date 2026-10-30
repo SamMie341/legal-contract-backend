@@ -12,13 +12,13 @@ export class UpdateContractTypeUseCase {
     async execute(id: number, dto: UpdateContractTypeDto) {
         const existing = await this.contractTypeRepo.findById(id);
         if (!existing) {
-            throw new NotFoundException('ບໍ່ພົບປະເພດສັນຍາທີ່ຕ້ອງການແກ້ໄຂ (Contract Type not found)');
+            throw new NotFoundException('ບໍ່ພົບປະເພດສັນຍາທີ່ຕ້ອງການແກ້ໄຂ');
         }
 
         if (dto.nameLo !== undefined) {
             const duplicate = await this.contractTypeRepo.findByNameLo(dto.nameLo, id);
             if (duplicate) {
-                throw new ConflictException('ຊື່ປະເພດສັນຍາ (nameLo) ນີ້ຊ້ຳກັບລາຍການອື່ນໃນລະບົບ');
+                throw new ConflictException('ຊື່ປະເພດສັນຍານີ້ຊ້ຳກັບລາຍການອື່ນໃນລະບົບ');
             }
         }
 
