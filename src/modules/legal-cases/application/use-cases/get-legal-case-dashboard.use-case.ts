@@ -1,7 +1,7 @@
 import { Injectable, Inject, ForbiddenException } from '@nestjs/common';
-import { UserRole } from '@prisma/client';
 import * as repoInterface from '../../domain/repositories/legal-case.repository.interface.js';
-import { isDisputeResolutionDivision } from '../../../../core/utils/division-helper.util.js';
+import { canAccessModule } from '../../../../core/utils/division-helper.util.js';
+import { SystemModule } from '../../../../core/constants/division.constant.js';
 
 @Injectable()
 export class GetLegalCaseDashboardUseCase {
@@ -11,11 +11,7 @@ export class GetLegalCaseDashboardUseCase {
     ) { }
 
     async execute(user: any) {
-        if (
-            user &&
-            user.role !== UserRole.ADMIN &&
-            (!isDisputeResolutionDivision(user?.division) || user.canView === false)
-        ) {
+        if (user && !canAccessModule(user, SystemModule.LEGAL_CASES, 'canView')) {
             throw new ForbiddenException('ທ່ານບໍ່ມີສິດເບິ່ງຂໍ້ມູນ Dashboard ຄະດີ');
         }
 

@@ -1,8 +1,8 @@
 import { Injectable, Inject, BadRequestException, NotFoundException, ForbiddenException } from '@nestjs/common';
-import { UserRole } from '@prisma/client';
 import * as attachmentRepoInterface from '../../domain/repositories/case-attachment.repository.interface.js';
 import * as caseRepoInterface from '../../domain/repositories/legal-case.repository.interface.js';
-import { isDisputeResolutionDivision } from '../../../../core/utils/division-helper.util.js';
+import { canAccessModule } from '../../../../core/utils/division-helper.util.js';
+import { SystemModule } from '../../../../core/constants/division.constant.js';
 
 @Injectable()
 export class UploadCaseAttachmentUseCase {
@@ -16,11 +16,7 @@ export class UploadCaseAttachmentUseCase {
     async execute(idOrCode: string, file: Express.Multer.File, user: any) {
         const isObjectUser = typeof user === 'object' && user !== null;
         if (isObjectUser) {
-            const isDisputeDiv = isDisputeResolutionDivision(user.division);
-            const canUpload =
-                user.role === UserRole.ADMIN ||
-                (isDisputeDiv && (user.role === UserRole.MAIN_USER || user.canUpload === true));
-            if (!canUpload) {
+            if (!canAccessModule(user, SystemModule.LEGAL_CASES, 'canUpload')) {
                 throw new ForbiddenException('ທ່ານບໍ່ມີສິດອັບໂຫຼດໄຟລ໌ແນບຄະດີ');
             }
         }

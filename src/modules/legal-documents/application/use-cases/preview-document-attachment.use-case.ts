@@ -1,7 +1,7 @@
 import { Injectable, Inject, NotFoundException, ForbiddenException } from '@nestjs/common';
-import { UserRole } from '@prisma/client';
 import * as attachmentRepoInterface from '../../domain/repositories/document-attachment.repository.interface.js';
-import { isLegalDocumentDivision } from '../../../../core/utils/division-helper.util.js';
+import { canAccessModule } from '../../../../core/utils/division-helper.util.js';
+import { SystemModule } from '../../../../core/constants/division.constant.js';
 
 @Injectable()
 export class PreviewDocumentAttachmentUseCase {
@@ -11,11 +11,7 @@ export class PreviewDocumentAttachmentUseCase {
     ) { }
 
     async execute(attachmentId: string, user: any) {
-        if (
-            user &&
-            user.role !== UserRole.ADMIN &&
-            (!isLegalDocumentDivision(user?.division) || user.canView === false)
-        ) {
+        if (!canAccessModule(user, SystemModule.LEGAL_DOCUMENTS, 'canView')) {
             throw new ForbiddenException('ທ່ານບໍ່ມີສິດເບິ່ງໄຟລ໌ແນບ');
         }
 

@@ -1,7 +1,7 @@
 import { Injectable, Inject, ForbiddenException } from '@nestjs/common';
 import * as contractRepositoryInterface from '../../domain/repositories/contract.repository.interface.js';
-import { UserRole } from '@prisma/client';
-import { isGeneralContractDivision } from '../../../../core/utils/division-helper.util.js';
+import { canAccessModule } from '../../../../core/utils/division-helper.util.js';
+import { SystemModule } from '../../../../core/constants/division.constant.js';
 
 @Injectable()
 export class DeleteContractUseCase {
@@ -12,11 +12,7 @@ export class DeleteContractUseCase {
 
     async execute(id: string, user: any) {
         // ตรวจสอบสิทธิ์การลบ (Admin, Main User, หรือผู้มีสิทธิ์ canDelete ตาม Division)
-        const isContractDiv = isGeneralContractDivision(user?.division);
-        const canDelete =
-            user.role === UserRole.ADMIN ||
-            (isContractDiv && (user.role === UserRole.MAIN_USER || user.canDelete === true));
-        if (!canDelete) {
+        if (!canAccessModule(user, SystemModule.CONTRACTS, 'canDelete')) {
             throw new ForbiddenException('ທ່ານບໍ່ມີສິດລົບສັນຍາ');
         }
 

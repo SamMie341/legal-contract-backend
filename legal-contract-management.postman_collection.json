@@ -115,6 +115,16 @@
       "key": "contactChannelId",
       "value": "1",
       "type": "string"
+    },
+    {
+      "key": "refreshToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "roleId",
+      "value": "",
+      "type": "string"
     }
   ],
   "item": [
@@ -128,13 +138,19 @@
               "listen": "test",
               "script": {
                 "exec": [
-                  "const jsonData = pm.response.json();",
-                  "if (jsonData.accessToken) {",
-                  "    pm.collectionVariables.set(\"accessToken\", jsonData.accessToken);",
-                  "    pm.environment.set(\"accessToken\", jsonData.accessToken);",
-                  "}",
-                  "pm.test(\"Status code is 200 OK\", () => pm.response.to.have.status(200));",
-                  "pm.test(\"Has accessToken\", () => pm.expect(jsonData).to.have.property(\"accessToken\"));"
+                  "if (pm.response.code === 200) {",
+                  "    var jsonData = pm.response.json();",
+                  "    if (jsonData.accessToken) {",
+                  "        pm.collectionVariables.set(\"accessToken\", jsonData.accessToken);",
+                  "        pm.environment.set(\"accessToken\", jsonData.accessToken);",
+                  "        pm.environment.set(\"jwt_token\", jsonData.accessToken);",
+                  "    }",
+                  "    if (jsonData.refreshToken) {",
+                  "        pm.collectionVariables.set(\"refreshToken\", jsonData.refreshToken);",
+                  "        pm.environment.set(\"refreshToken\", jsonData.refreshToken);",
+                  "        pm.environment.set(\"refresh_token\", jsonData.refreshToken);",
+                  "    }",
+                  "}"
                 ],
                 "type": "text/javascript"
               }
@@ -183,6 +199,57 @@
               ]
             }
           }
+        },
+        {
+          "name": "Refresh Token (POST /auth/refresh)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    var jsonData = pm.response.json();",
+                  "    if (jsonData.accessToken) {",
+                  "        pm.collectionVariables.set(\"accessToken\", jsonData.accessToken);",
+                  "        pm.environment.set(\"accessToken\", jsonData.accessToken);",
+                  "        pm.environment.set(\"jwt_token\", jsonData.accessToken);",
+                  "    }",
+                  "    if (jsonData.refreshToken) {",
+                  "        pm.collectionVariables.set(\"refreshToken\", jsonData.refreshToken);",
+                  "        pm.environment.set(\"refreshToken\", jsonData.refreshToken);",
+                  "        pm.environment.set(\"refresh_token\", jsonData.refreshToken);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/refresh",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "refresh"
+              ]
+            },
+            "description": "ຕໍ່ອາຍຸ Access Token ແລະ ດຶງສິດທິ Matrix ໃໝ່ລ່າສຸດໂດຍອັດຕະໂນມັດ ເມື່ອ TokenVersion ຖືກປ່ຽນ"
+          },
+          "response": []
         }
       ]
     },
@@ -534,7 +601,7 @@
       ]
     },
     {
-      "name": "03. Contracts (ການຈັດການສັນຍາ)",
+      "name": "04. Contracts (ການຈັດການສັນຍາ)",
       "item": [
         {
           "name": "Get Dashboard Stats (GET /contracts/dashboard)",
@@ -725,7 +792,7 @@
       ]
     },
     {
-      "name": "04. Attachments (ເອກະສານຕິດຄັດ)",
+      "name": "05. Contract Attachments (ເອກະສານຕິດຄັດສັນຍາ)",
       "item": [
         {
           "name": "List Contract Attachments (GET /contracts/:id/attachments)",
@@ -847,7 +914,69 @@
       ]
     },
     {
-      "name": "06. Legal Documents (ລະບົບຄຸ້ມຄອງ ແລະ ຕິດຕາມນິຕິກຳ)",
+      "name": "06. Contract Notifications (ການແຈ້ງເຕືອນສັນຍາ)",
+      "item": [
+        {
+          "name": "Get Notifications (GET /notifications)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/notifications?unreadOnly=true",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "notifications"
+              ],
+              "query": [
+                {
+                  "key": "unreadOnly",
+                  "value": "true"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Mark All Notifications as Read (PATCH /notifications/read-all)",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/notifications/read-all",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "notifications",
+                "read-all"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Mark Single Notification as Read (PATCH /notifications/:id/read)",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/notifications/{{notificationId}}/read",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "notifications",
+                "{{notificationId}}",
+                "read"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "07. Legal Documents (ລະບົບຄຸ້ມຄອງ ແລະ ຕິດຕາມນິຕິກຳ)",
       "item": [
         {
           "name": "Get Dashboard Stats (GET /legal-documents/dashboard)",
@@ -1137,7 +1266,7 @@
       ]
     },
     {
-      "name": "07. Legal Cases (ລະບົບຄຸ້ມຄອງ ແລະ ຕິດຕາມຄະດີ / ຂໍ້ຂັດແຍ່ງ)",
+      "name": "08. Legal Cases (ລະບົບຄຸ້ມຄອງ ແລະ ຕິດຕາມຄະດີ / ຂໍ້ຂັດແຍ່ງ)",
       "item": [
         {
           "name": "Get Dashboard Stats (GET /legal-cases/dashboard)",
@@ -1425,466 +1554,6 @@
               "path": [
                 "legal-cases",
                 "{{legalCaseId}}"
-              ]
-            }
-          }
-        }
-      ]
-    },
-    {
-      "name": "05. Notifications (ການແຈ້ງເຕືອນ)",
-      "item": [
-        {
-          "name": "Get Notifications (GET /notifications)",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/notifications?unreadOnly=true",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "notifications"
-              ],
-              "query": [
-                {
-                  "key": "unreadOnly",
-                  "value": "true"
-                }
-              ]
-            }
-          }
-        },
-        {
-          "name": "Mark All Notifications as Read (PATCH /notifications/read-all)",
-          "request": {
-            "method": "PATCH",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/notifications/read-all",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "notifications",
-                "read-all"
-              ]
-            }
-          }
-        },
-        {
-          "name": "Mark Single Notification as Read (PATCH /notifications/:id/read)",
-          "request": {
-            "method": "PATCH",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/notifications/{{notificationId}}/read",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "notifications",
-                "{{notificationId}}",
-                "read"
-              ]
-            }
-          }
-        }
-      ]
-    },
-    {
-      "name": "06. Users & HRM Sync (ການຈັດການຜູ້ໃຊ້ ແລະ Sync ຈາກ HRM)",
-      "item": [
-        {
-          "name": "Lookup HRM Employee Auto-fill (GET /users/hrm/:empCode)",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/users/hrm/{{empCode}}",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "users",
-                "hrm",
-                "{{empCode}}"
-              ]
-            }
-          }
-        },
-        {
-          "name": "Create User by HRM Sync (POST /users)",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "const jsonData = pm.response.json();",
-                  "if (jsonData.data && jsonData.data.id) {",
-                  "    pm.collectionVariables.set(\"userId\", jsonData.data.id);",
-                  "    pm.environment.set(\"userId\", jsonData.data.id);",
-                  "}"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"employeeCode\": \"EDL-001\",\n  \"role\": \"MAIN_USER\",\n  \"division\": \"ພະແນກສັນຍາທົ່ວໄປ\",\n  \"canView\": true,\n  \"canUpload\": true,\n  \"canEdit\": true,\n  \"canDelete\": true,\n  \"canDownload\": true\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/users",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "users"
-              ]
-            }
-          }
-        },
-        {
-          "name": "List Users (GET /users)",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/users?page=1&limit=10&search=&role=&isActive=true",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "users"
-              ],
-              "query": [
-                {
-                  "key": "page",
-                  "value": "1"
-                },
-                {
-                  "key": "limit",
-                  "value": "10"
-                },
-                {
-                  "key": "search",
-                  "value": ""
-                },
-                {
-                  "key": "role",
-                  "value": ""
-                },
-                {
-                  "key": "isActive",
-                  "value": "true"
-                }
-              ]
-            }
-          }
-        },
-        {
-          "name": "Get User by ID (GET /users/:id)",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/users/{{userId}}",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "users",
-                "{{userId}}"
-              ]
-            }
-          }
-        },
-        {
-          "name": "Update User Role, Status & Permissions (PATCH /users/:id)",
-          "request": {
-            "method": "PATCH",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"role\": \"MAIN_USER\",\n  \"division\": \"ພະແນກນິຕິກຳ ແລະ ແກ້ໄຂຂໍ້ຂັດແຍ່ງ\",\n  \"canView\": true,\n  \"canUpload\": true,\n  \"canEdit\": true,\n  \"canDelete\": true,\n  \"canDownload\": true\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/users/{{userId}}",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "users",
-                "{{userId}}"
-              ]
-            }
-          }
-        },
-        {
-          "name": "Delete User Soft Delete (DELETE /users/:id)",
-          "request": {
-            "method": "DELETE",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/users/{{userId}}",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "users",
-                "{{userId}}"
-              ]
-            }
-          }
-        }
-      ]
-    },
-    {
-      "name": "07. Support & Feedback (ຊ່ອງທາງຕິດຕໍ່ ແລະ ແຈ້ງບັນຫາ)",
-      "item": [
-        {
-          "name": "Get Contact Channels (GET /support/contacts)",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/support/contacts",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "support",
-                "contacts"
-              ]
-            }
-          }
-        },
-        {
-          "name": "Create Contact Channel (POST /support/contacts)",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"channelName\": \"ສາຍດ່ວນ IT Support ພະແນກສັນຍາ\",\n  \"contactInfo\": \"+856 21 316123 ຫຼື itsupport@edl.com.la\",\n  \"description\": \"ວັນຈັນ - ວັນສຸກ ເວລາ 08:30 - 16:30\",\n  \"sortOrder\": 1,\n  \"isActive\": true\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/support/contacts",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "support",
-                "contacts"
-              ]
-            }
-          }
-        },
-        {
-          "name": "Delete Contact Channel (DELETE /support/contacts/:id)",
-          "request": {
-            "method": "DELETE",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/support/contacts/{{contactChannelId}}",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "support",
-                "contacts",
-                "{{contactChannelId}}"
-              ]
-            }
-          }
-        },
-        {
-          "name": "Submit Support Ticket (POST /support/tickets)",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "const jsonData = pm.response.json();",
-                  "if (jsonData.data && jsonData.data.id) {",
-                  "    pm.collectionVariables.set(\"ticketId\", jsonData.data.id);",
-                  "    pm.environment.set(\"ticketId\", jsonData.data.id);",
-                  "}"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"subject\": \"ຂໍເພີ່ມຊ່ອງທາງການຄົ້ນຫາຕາມວັນທີລົງລາຍເຊັນ\",\n  \"description\": \"ຕ້ອງການໃຫ້ໜ້າຕາຕະລາງສັນຍາສາມາດ Filter ຕາມຊ່ວງວັນທີ Signed Date ໄດ້\",\n  \"priority\": \"MEDIUM\"\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/support/tickets",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "support",
-                "tickets"
-              ]
-            }
-          }
-        },
-        {
-          "name": "Get Support Tickets (GET /support/tickets)",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/support/tickets?page=1&limit=10&status=OPEN",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "support",
-                "tickets"
-              ],
-              "query": [
-                {
-                  "key": "page",
-                  "value": "1"
-                },
-                {
-                  "key": "limit",
-                  "value": "10"
-                },
-                {
-                  "key": "status",
-                  "value": "OPEN"
-                }
-              ]
-            }
-          }
-        },
-        {
-          "name": "Get Support Ticket by ID (GET /support/tickets/:id)",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/support/tickets/{{ticketId}}",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "support",
-                "tickets",
-                "{{ticketId}}"
-              ]
-            }
-          }
-        },
-        {
-          "name": "Get Support Ticket Attachment (GET /support/tickets/:id/attachment)",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/support/tickets/{{ticketId}}/attachment",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "support",
-                "tickets",
-                "{{ticketId}}",
-                "attachment"
-              ]
-            }
-          }
-        },
-        {
-          "name": "Update Ticket Status (PATCH /support/tickets/:id)",
-          "request": {
-            "method": "PATCH",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"status\": \"IN_PROGRESS\",\n  \"adminNote\": \"ກຳລັງດຳເນີນການພັດທະນາຟີເຈີນີ້ໃນ Sprint ຖັດໄປ\"\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/support/tickets/{{ticketId}}",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "support",
-                "tickets",
-                "{{ticketId}}"
-              ]
-            }
-          }
-        }
-      ]
-    },
-    {
-      "name": "08. Audit Logs (ປະຫວັດການດຳເນີນງານ)",
-      "item": [
-        {
-          "name": "Get Audit Logs (GET /audit-logs)",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/audit-logs?page=1&limit=20&action=CREATE_CONTRACT",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "audit-logs"
-              ],
-              "query": [
-                {
-                  "key": "page",
-                  "value": "1"
-                },
-                {
-                  "key": "limit",
-                  "value": "20"
-                },
-                {
-                  "key": "action",
-                  "value": "CREATE_CONTRACT"
-                }
               ]
             }
           }
@@ -2307,6 +1976,585 @@
               "path": [
                 "power-notifications",
                 "read-all"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "10. Users & HRM Sync (ການຈັດການຜູ້ໃຊ້, ລະຫັດຜ່ານ ແລະ Sync ຈາກ HRM)",
+      "item": [
+        {
+          "name": "Lookup HRM Employee Auto-fill (GET /users/hrm/:empCode)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/users/hrm/{{empCode}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "hrm",
+                "{{empCode}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create User by HRM Sync (POST /users)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const jsonData = pm.response.json();",
+                  "if (jsonData.data && jsonData.data.id) {",
+                  "    pm.collectionVariables.set(\"userId\", jsonData.data.id);",
+                  "    pm.environment.set(\"userId\", jsonData.data.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"employeeCode\": \"EDL-001\",\n  \"role\": \"MAIN_USER\",\n  \"division\": \"ພະແນກສັນຍາທົ່ວໄປ\",\n  \"canView\": true,\n  \"canUpload\": true,\n  \"canEdit\": true,\n  \"canDelete\": true,\n  \"canDownload\": true,\n  \"modulePermissions\": [\n    {\n      \"module\": \"CONTRACTS\",\n      \"canView\": true,\n      \"canUpload\": true,\n      \"canEdit\": true,\n      \"canDelete\": true,\n      \"canDownload\": true\n    },\n    {\n      \"module\": \"LEGAL_DOCUMENTS\",\n      \"canView\": true,\n      \"canUpload\": false,\n      \"canEdit\": false,\n      \"canDelete\": false,\n      \"canDownload\": true\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/users",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users"
+              ]
+            }
+          }
+        },
+        {
+          "name": "List Users (GET /users)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/users?page=1&limit=10&search=&role=&isActive=true",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                },
+                {
+                  "key": "search",
+                  "value": ""
+                },
+                {
+                  "key": "role",
+                  "value": ""
+                },
+                {
+                  "key": "isActive",
+                  "value": "true"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Change Own Password (PATCH /users/change-password)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"currentPassword\": \"CurrentPassword@123\",\n  \"newPassword\": \"NewSecurePass@2026\",\n  \"confirmPassword\": \"NewSecurePass@2026\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/users/change-password",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "change-password"
+              ]
+            },
+            "description": "ປ່ຽນລະຫັດຜ່ານຂອງຕົນເອງ (Change Password - ສຳລັບຜູ້ໃຊ້ທົ່ວໄປ ແລະ Admin ທຸກພະແນກ)"
+          }
+        },
+        {
+          "name": "Get User by ID (GET /users/:id)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/users/{{userId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "{{userId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update User Role, Status & Permissions (PATCH /users/:id)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"role\": \"DIVISION_HEAD\",\n  \"division\": \"ພະແນກນິຕິກຳ ແລະ ແກ້ໄຂຂໍ້ຂັດແຍ່ງ\",\n  \"canView\": true,\n  \"canUpload\": true,\n  \"canEdit\": true,\n  \"canDelete\": true,\n  \"canDownload\": true,\n  \"modulePermissions\": [\n    {\n      \"module\": \"LEGAL_DOCUMENTS\",\n      \"canView\": true,\n      \"canUpload\": true,\n      \"canEdit\": true,\n      \"canDelete\": true,\n      \"canDownload\": true\n    },\n    {\n      \"module\": \"LEGAL_CASES\",\n      \"canView\": true,\n      \"canUpload\": true,\n      \"canEdit\": true,\n      \"canDelete\": true,\n      \"canDownload\": true\n    },\n    {\n      \"module\": \"POWER_CONTRACTS\",\n      \"canView\": true,\n      \"canUpload\": false,\n      \"canEdit\": false,\n      \"canDelete\": false,\n      \"canDownload\": true\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/users/{{userId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "{{userId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Reset User Password (Admin Only) (PATCH /users/:id/reset-password)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"newPassword\": \"NewAdminSetPass@2026\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/users/{{userId}}/reset-password",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "{{userId}}",
+                "reset-password"
+              ]
+            },
+            "description": "ຣີເຊັດລະຫັດຜ່ານຂອງຜູ້ໃຊ້ (ສະເພາະ Admin). ຫາກບໍ່ລະບຸ newPassword ລະບົບຈະກຳນົດເປັນຄ່າເລີ່ມຕົ້ນ EDL@{employeeCode} ອັດຕະໂນມັດ"
+          }
+        },
+        {
+          "name": "Delete User Soft Delete (DELETE /users/:id)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/users/{{userId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "{{userId}}"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "11. Roles Management (ການຈັດການບົດບາດ ແລະ ສິດ Dynamic RBAC)",
+      "item": [
+        {
+          "name": "List All Roles (GET /roles)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/roles",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "roles"
+              ]
+            },
+            "description": "ດຶງລາຍຊື່ບົດບາດທັງໝົດ ພ້ອມສິດ Matrix ລາຍໂມດູນ ແລະ ຈຳນວນຜູ້ໃຊ້ທີ່ຖື Role"
+          }
+        },
+        {
+          "name": "Get Role by ID (GET /roles/:id)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/roles/{{roleId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "roles",
+                "{{roleId}}"
+              ]
+            },
+            "description": "ດຶງລາຍລະອຽດຂອງ Role ຕາມ ID"
+          }
+        },
+        {
+          "name": "Create Custom Role (POST /roles)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const jsonData = pm.response.json();",
+                  "if (jsonData.data && jsonData.data.id) {",
+                  "    pm.collectionVariables.set(\"roleId\", jsonData.data.id);",
+                  "    pm.environment.set(\"roleId\", jsonData.data.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"CONTRACT_AUDITOR\",\n  \"title\": \"ຜູ້ກວດສອບສັນຍາ\",\n  \"description\": \"ກວດສອບ ແລະ ດາວໂຫຼດເອກະສານສັນຍາທຸກພະແນກ\",\n  \"permissions\": [\n    {\n      \"module\": \"CONTRACTS\",\n      \"canView\": true,\n      \"canUpload\": false,\n      \"canEdit\": false,\n      \"canDelete\": false,\n      \"canDownload\": true\n    },\n    {\n      \"module\": \"POWER_CONTRACTS\",\n      \"canView\": true,\n      \"canUpload\": false,\n      \"canEdit\": false,\n      \"canDelete\": false,\n      \"canDownload\": true\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/roles",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "roles"
+              ]
+            },
+            "description": "ສ້າງບົດບາດໃໝ່ (Admin Only) ພ້ອມກຳນົດສິດ Matrix ທັງ 4 ໂມດູນ"
+          }
+        },
+        {
+          "name": "Update Role & Permissions (PATCH /roles/:id)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"ຜູ້ກວດສອບສັນຍາຂັ້ນສູງ\",\n  \"description\": \"ກວດສອບ ແລະ ດາວໂຫຼດເອກະສານສັນຍາ ແລະ ນິຕິກຳ\",\n  \"permissions\": [\n    {\n      \"module\": \"LEGAL_DOCUMENTS\",\n      \"canView\": true,\n      \"canUpload\": false,\n      \"canEdit\": false,\n      \"canDelete\": false,\n      \"canDownload\": true\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/roles/{{roleId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "roles",
+                "{{roleId}}"
+              ]
+            },
+            "description": "ແກ້ໄຂຊື່, ຄຳອະທິບາຍ ຫຼື ສິດ Matrix ຂອງ Role (Admin Only)"
+          }
+        },
+        {
+          "name": "Delete Custom Role (DELETE /roles/:id)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/roles/{{roleId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "roles",
+                "{{roleId}}"
+              ]
+            },
+            "description": "ລົບບົດບາດ (Admin Only - ຫ້າມລົບ System Role ແລະ Role ທີ່ມີ User ໃຊ້ຢູ່)"
+          }
+        }
+      ]
+    },
+    {
+      "name": "12. Support & Feedback (ຊ່ອງທາງຕິດຕໍ່ ແລະ ແຈ້ງບັນຫາ)",
+      "item": [
+        {
+          "name": "Get Contact Channels (GET /support/contacts)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/support/contacts",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "support",
+                "contacts"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Contact Channel (POST /support/contacts)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"channelName\": \"ສາຍດ່ວນ IT Support ພະແນກສັນຍາ\",\n  \"contactInfo\": \"+856 21 316123 ຫຼື itsupport@edl.com.la\",\n  \"description\": \"ວັນຈັນ - ວັນສຸກ ເວລາ 08:30 - 16:30\",\n  \"sortOrder\": 1,\n  \"isActive\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/support/contacts",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "support",
+                "contacts"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delete Contact Channel (DELETE /support/contacts/:id)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/support/contacts/{{contactChannelId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "support",
+                "contacts",
+                "{{contactChannelId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Submit Support Ticket (POST /support/tickets)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const jsonData = pm.response.json();",
+                  "if (jsonData.data && jsonData.data.id) {",
+                  "    pm.collectionVariables.set(\"ticketId\", jsonData.data.id);",
+                  "    pm.environment.set(\"ticketId\", jsonData.data.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"subject\": \"ຂໍເພີ່ມຊ່ອງທາງການຄົ້ນຫາຕາມວັນທີລົງລາຍເຊັນ\",\n  \"description\": \"ຕ້ອງການໃຫ້ໜ້າຕາຕະລາງສັນຍາສາມາດ Filter ຕາມຊ່ວງວັນທີ Signed Date ໄດ້\",\n  \"priority\": \"MEDIUM\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/support/tickets",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "support",
+                "tickets"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Support Tickets (GET /support/tickets)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/support/tickets?page=1&limit=10&status=OPEN",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "support",
+                "tickets"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                },
+                {
+                  "key": "status",
+                  "value": "OPEN"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Support Ticket by ID (GET /support/tickets/:id)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/support/tickets/{{ticketId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "support",
+                "tickets",
+                "{{ticketId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Support Ticket Attachment (GET /support/tickets/:id/attachment)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/support/tickets/{{ticketId}}/attachment",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "support",
+                "tickets",
+                "{{ticketId}}",
+                "attachment"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Ticket Status (PATCH /support/tickets/:id)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"IN_PROGRESS\",\n  \"adminNote\": \"ກຳລັງດຳເນີນການພັດທະນາຟີເຈີນີ້ໃນ Sprint ຖັດໄປ\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/support/tickets/{{ticketId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "support",
+                "tickets",
+                "{{ticketId}}"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "13. Audit Logs (ປະຫວັດການດຳເນີນງານ)",
+      "item": [
+        {
+          "name": "Get Audit Logs (GET /audit-logs)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/audit-logs?page=1&limit=20&action=CREATE_CONTRACT",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "audit-logs"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                },
+                {
+                  "key": "action",
+                  "value": "CREATE_CONTRACT"
+                }
               ]
             }
           }

@@ -1,6 +1,8 @@
-import { IsString, IsNotEmpty, IsOptional, IsEnum, IsBoolean } from 'class-validator';
+import { IsString, IsNotEmpty, IsOptional, IsEnum, IsBoolean, ValidateNested, IsArray, IsUUID } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
 import { UserRole } from '@prisma/client';
+import { ModulePermissionDto } from './module-permission.dto.js';
 
 export class CreateUserDto {
     @ApiProperty({
@@ -15,6 +17,14 @@ export class CreateUserDto {
     @IsOptional()
     @IsEnum(UserRole)
     role?: UserRole;
+
+    @ApiPropertyOptional({
+        description: 'ID ຂອງ Role ທີ່ຕ້ອງການຜູກ (Custom Role ID)',
+        example: '33def50d-ba6f-41b3-823d-1357684ecf56',
+    })
+    @IsOptional()
+    @IsUUID()
+    roleId?: string;
 
     @ApiPropertyOptional({ default: true, description: 'ສິດທິ: ເບິ່ງຂໍ້ມູນ' })
     @IsOptional()
@@ -80,4 +90,14 @@ export class CreateUserDto {
     @IsOptional()
     @IsString()
     phone?: string;
+
+    @ApiPropertyOptional({
+        description: 'Matrix ສິດລາຍໂມດູນ (Module-Scoped Permissions)',
+        type: [ModulePermissionDto],
+    })
+    @IsOptional()
+    @IsArray()
+    @ValidateNested({ each: true })
+    @Type(() => ModulePermissionDto)
+    modulePermissions?: ModulePermissionDto[];
 }

@@ -15,9 +15,19 @@ datasource db {
 /// บทบาทผู้ใช้งานหลักในระบบ (อ้างอิงตามข้อกำหนดข้อ 2, 3, 4, 5)
 enum UserRole {
   ADMIN // ผู้ดูแลระบบสูงสุด (ทำได้ทุกอย่าง + ดาวน์โหลดไฟล์ได้)
+  DEPARTMENT_HEAD // ระดับฝ่าย (หัวหน้าฝ่าย/รองหัวหน้าฝ่ายกฎหมาย เข้าดูและดาวน์โหลดได้ครบทุกโมดูล)
+  DIVISION_HEAD // ระดับหัวหน้าแผนก (จัดการเต็มรูปแบบในแผนกตนเอง)
   MAIN_USER // User หลักของแผนก (อัปโหลด, แก้ไข, ลบ และได้รับอนุญาตให้ดาวน์โหลดสัญญาได้)
   EDITOR // ผู้ใช้งานที่มีสิทธิ์อัปโหลด/แก้ไขข้อมูลตามที่ได้รับมอบหมาย
   VIEWER // ผู้ใช้งานที่จำกัดสิทธิ์ให้ดูข้อมูล (View) ได้เท่านั้น
+}
+
+/// ໂມດູນຫຼັກໃນລະບົບສຳລັບກຳນົດສິດ (Module-Scoped Permissions)
+enum SystemModule {
+  CONTRACTS // ສັນຍາທົ່ວໄປ (General Contracts)
+  POWER_CONTRACTS // ສັນຍາຊື້-ຂາຍໄຟຟ້າ (Power Purchase & Sale Contracts)
+  LEGAL_DOCUMENTS // ນິຕິກຳ (Legal Documents)
+  LEGAL_CASES // ຄະດີ ແລະ ຂໍ້ຂັດແຍ່ງ (Legal Cases & Disputes)
 }
 
 /// สกุลเงินที่ระบบรองรับ 3 สกุล (ກີບ, USD ແລະ Yuan)
@@ -57,6 +67,9 @@ enum AuditAction {
   UPLOAD_POWER_ATTACHMENT
   DOWNLOAD_POWER_ATTACHMENT
   DELETE_POWER_ATTACHMENT
+  CREATE_ROLE
+  UPDATE_ROLE
+  DELETE_ROLE
 }
 
 /// ປະເພດສັນຍາຊື້-ຂາຍໄຟຟ້າ (ພະແນກສັນຍາຊື້-ຂາຍໄຟຟ້າ)
@@ -136,7 +149,9 @@ model User {
   phone        String?
 
   // บทบาทหลัก
-  role UserRole @default(VIEWER)
+  role    UserRole? @default(VIEWER) // Retain UserRole enum for fallback
+  roleId  String?   @map("role_id") @db.Uuid
+  roleRef Role?     @relation(fields: [roleId], references: [id], onDelete: SetNull)
 
   // Fine-grained Permissions (ข้อ 3, 4, 5: กำหนดสิทธิ์รายบุคคลเพิ่มเติมจาก Role ได้)
   canView     Boolean @default(true) @map("can_view") // ข้อ 4: ดูข้อมูลอย่างเดียว
@@ -150,6 +165,10 @@ model User {
   createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz()
   updatedAt   DateTime  @updatedAt @map("updated_at") @db.Timestamptz()
   deletedAt   DateTime? @map("deleted_at") @db.Timestamptz() // รองรับ Soft Delete เวลาลบบัญชี User
+
+  // Token Versioning & Refresh Token (Pure Stateless Token Invalidation)
+  tokenVersion Int     @default(1) @map("token_version")
+  refreshToken String? @map("refresh_token")
 
   // Relations - Contracts & System
   createdContracts      Contract[]             @relation("ContractCreator")
@@ -176,8 +195,68 @@ model User {
   powerDownloadLogs           PowerContractDownloadLog[]
   powerNotifications          PowerContractNotification[]
 
+  // สิทธิ์รายโมดูล (Module-Scoped RBAC & Granular Permission Matrix)
+  modulePermissions           UserModulePermission[]
+
   @@index([role, isActive])
+  @@index([roleId])
   @@map("users")
+}
+
+/// ຕາຕະລາງບົດບາດຜູ້ໃຊ້ແບບກຳນົດເອງ (Dynamic Custom Roles)
+model Role {
+  id          String   @id @default(uuid()) @db.Uuid
+  name        String   @unique // e.g. "ADMIN", "DEPARTMENT_HEAD", "CONTRACT_AUDITOR"
+  title       String   // e.g. "ຜູ້ບໍລິຫານລະບົບ", "ຫົວໜ້າຝ່າຍ", "ນາຍຊ່າງກວດສອບສັນຍາ"
+  description String?  // ຄຳອະທິບາຍບົດບາດ
+  isSystem    Boolean  @default(false) @map("is_system") // ຫ້າມລົບ Role ຫຼັກຂອງລະບົບ
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz()
+
+  permissions RoleModulePermission[]
+  users       User[]
+
+  @@map("roles")
+}
+
+/// ຕາຕະລາງສິດລາຍໂມດູນຂອງແຕ່ລະ Role (Role x Module x Action Permissions)
+model RoleModulePermission {
+  id          String       @id @default(uuid()) @db.Uuid
+  roleId      String       @map("role_id") @db.Uuid
+  module      SystemModule
+
+  canView     Boolean      @default(true)  @map("can_view")
+  canUpload   Boolean      @default(false) @map("can_upload")
+  canEdit     Boolean      @default(false) @map("can_edit")
+  canDelete   Boolean      @default(false) @map("can_delete")
+  canDownload Boolean      @default(false) @map("can_download")
+  updatedAt   DateTime     @updatedAt @map("updated_at") @db.Timestamptz()
+
+  role        Role         @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@unique([roleId, module])
+  @@index([roleId])
+  @@map("role_module_permissions")
+}
+
+/// ตารางสิทธิ์การใช้งานรายโมดูล (User x Module x Action Permissions)
+model UserModulePermission {
+  id          String       @id @default(uuid()) @db.Uuid
+  userId      String       @map("user_id") @db.Uuid
+  module      SystemModule
+
+  canView     Boolean      @default(true)  @map("can_view")
+  canUpload   Boolean      @default(false) @map("can_upload")
+  canEdit     Boolean      @default(false) @map("can_edit")
+  canDelete   Boolean      @default(false) @map("can_delete")
+  canDownload Boolean      @default(false) @map("can_download")
+  updatedAt   DateTime     @updatedAt @map("updated_at") @db.Timestamptz()
+
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, module])
+  @@index([userId])
+  @@map("user_module_permissions")
 }
 
 // ==========================================

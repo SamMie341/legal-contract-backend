@@ -1,7 +1,9 @@
-import { Injectable, Inject, NotFoundException } from '@nestjs/common';
+import { Injectable, Inject, NotFoundException, ForbiddenException } from '@nestjs/common';
 import * as powerContractRepositoryInterface from '../../domain/repositories/power-contract.repository.interface.js';
 import { GetPowerContractHistoryDto } from '../dto/get-power-contract-history.dto.js';
 import { formatPowerContractAuditLog } from '../helpers/power-contract-history-formatter.helper.js';
+import { canAccessModule } from '../../../../core/utils/division-helper.util.js';
+import { SystemModule } from '../../../../core/constants/division.constant.js';
 
 @Injectable()
 export class GetPowerContractHistoryUseCase {
@@ -10,7 +12,11 @@ export class GetPowerContractHistoryUseCase {
         private readonly powerContractRepository: powerContractRepositoryInterface.IPowerContractRepository,
     ) { }
 
-    async execute(contractId: string, query: GetPowerContractHistoryDto, _user?: any) {
+    async execute(contractId: string, query: GetPowerContractHistoryDto, user?: any) {
+        if (user && !canAccessModule(user, SystemModule.POWER_CONTRACTS, 'canView')) {
+            throw new ForbiddenException('ທ່ານບໍ່ມີສິດເຂົ້າເຖິງປະຫວັດສັນຍາຊື້-ຂາຍໄຟຟ້າ');
+        }
+
         const contract = await this.powerContractRepository.findById(contractId);
         if (!contract) {
             throw new NotFoundException('ບໍ່ພົບສັນຍາຊື້-ຂາຍໄຟຟ້ານີ້ໃນລະບົບ');

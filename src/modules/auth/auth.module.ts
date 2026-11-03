@@ -6,6 +6,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { JwtStrategy } from './infrastructure/strategies/jwt.strategy.js';
 import { LocalLoginUseCase } from './application/use-cases/local-login.use-case.js';
+import { RefreshTokenUseCase } from './application/use-cases/refresh-token.use-case.js';
 import { AUTH_USER_REPOSITORY } from './domain/repositories/auth-user.repository.interface.js';
 import { AuthUserRepository } from './infrastructure/auth-user.repository.js';
 import { ConfigService } from '@nestjs/config';
@@ -33,6 +34,7 @@ import { HRM_API_SERVICE } from './domain/interface/hrm-api.interface.js';
     providers: [
         HrmApiService,
         LocalLoginUseCase,
+        RefreshTokenUseCase,
         JwtStrategy,
         {
             provide: AUTH_USER_REPOSITORY,

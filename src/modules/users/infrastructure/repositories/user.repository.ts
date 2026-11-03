@@ -3,10 +3,15 @@ import { PrismaService } from '../../../../infrastructure/database/prisma.servic
 import { IUserRepository } from '../../domain/repositories/user.repository.interface.js';
 import { UpdateUserDto } from '../../application/dto/update-user.dto.js';
 import { AuditAction, User, UserRole } from '@prisma/client';
+import { buildDefaultPermissionsForRole, resolveToPrismaModules } from '../../../../core/utils/division-helper.util.js';
+import { TokenVersionService } from '../../../../core/services/token-version.service.js';
 
 @Injectable()
 export class UserRepository implements IUserRepository {
-    constructor(private readonly prisma: PrismaService) { }
+    constructor(
+        private readonly prisma: PrismaService,
+        private readonly tokenVersionService: TokenVersionService,
+    ) { }
 
     async findAll(params: {
         skip: number;
@@ -56,6 +61,16 @@ export class UserRepository implements IUserRepository {
                     position: true,
                     phone: true,
                     role: true,
+                    roleId: true,
+                    roleRef: {
+                        select: {
+                            id: true,
+                            name: true,
+                            title: true,
+                            isSystem: true,
+                            permissions: true,
+                        },
+                    },
                     canView: true,
                     canUpload: true,
                     canEdit: true,
@@ -64,6 +79,16 @@ export class UserRepository implements IUserRepository {
                     isActive: true,
                     lastLoginAt: true,
                     createdAt: true,
+                    modulePermissions: {
+                        select: {
+                            module: true,
+                            canView: true,
+                            canUpload: true,
+                            canEdit: true,
+                            canDelete: true,
+                            canDownload: true,
+                        },
+                    },
                 },
             }),
             this.prisma.user.count({ where: whereCondition }),
@@ -96,6 +121,16 @@ export class UserRepository implements IUserRepository {
                 lastLoginAt: true,
                 createdAt: true,
                 updatedAt: true,
+                modulePermissions: {
+                    select: {
+                        module: true,
+                        canView: true,
+                        canUpload: true,
+                        canEdit: true,
+                        canDelete: true,
+                        canDownload: true,
+                    },
+                },
                 _count: {
                     select: {
                         createdContracts: { where: { deletedAt: null } },
@@ -131,33 +166,54 @@ export class UserRepository implements IUserRepository {
             canEdit: boolean;
             canDelete: boolean;
             canDownload: boolean;
+            modulePermissions?: any[];
         },
         currentUserId: string,
     ): Promise<any> {
         return this.prisma.$transaction(async (tx) => {
+            const { modulePermissions, ...userData } = data as any;
+
+            let roleIdToSet = userData.roleId;
+            let roleEnumToSet = userData.role;
+
+            if (roleIdToSet) {
+                const role = await tx.role.findUnique({ where: { id: roleIdToSet } });
+                if (role && Object.values(UserRole).includes(role.name as any)) {
+                    roleEnumToSet = role.name as UserRole;
+                }
+            } else if (roleEnumToSet) {
+                const role = await tx.role.findUnique({ where: { name: String(roleEnumToSet) } });
+                if (role) {
+                    roleIdToSet = role.id;
+                }
+            }
+
             const newUser = await tx.user.upsert({
-                where: { employeeCode: data.employeeCode },
+                where: { employeeCode: userData.employeeCode },
                 update: {
-                    username: data.username,
-                    email: data.email,
-                    passwordHash: data.passwordHash,
-                    fullName: data.fullName,
-                    department: data.department,
-                    division: data.division,
-                    unit: data.unit,
-                    position: data.position,
-                    phone: data.phone,
-                    role: data.role,
-                    canView: data.canView,
-                    canUpload: data.canUpload,
-                    canEdit: data.canEdit,
-                    canDelete: data.canDelete,
-                    canDownload: data.canDownload,
+                    username: userData.username,
+                    email: userData.email,
+                    passwordHash: userData.passwordHash,
+                    fullName: userData.fullName,
+                    department: userData.department,
+                    division: userData.division,
+                    unit: userData.unit,
+                    position: userData.position,
+                    phone: userData.phone,
+                    role: roleEnumToSet,
+                    roleId: roleIdToSet,
+                    canView: userData.canView,
+                    canUpload: userData.canUpload,
+                    canEdit: userData.canEdit,
+                    canDelete: userData.canDelete,
+                    canDownload: userData.canDownload,
                     isActive: true,
                     deletedAt: null,
                 },
                 create: {
-                    ...data,
+                    ...userData,
+                    role: roleEnumToSet,
+                    roleId: roleIdToSet,
                     isActive: true,
                 },
                 select: {
@@ -172,6 +228,16 @@ export class UserRepository implements IUserRepository {
                     position: true,
                     phone: true,
                     role: true,
+                    roleId: true,
+                    roleRef: {
+                        select: {
+                            id: true,
+                            name: true,
+                            title: true,
+                            isSystem: true,
+                            permissions: true,
+                        },
+                    },
                     canView: true,
                     canUpload: true,
                     canEdit: true,
@@ -181,6 +247,42 @@ export class UserRepository implements IUserRepository {
                     createdAt: true,
                 },
             });
+
+            // Upsert UserModulePermissions (either explicit or generated defaults)
+            const permsToSet =
+                modulePermissions && modulePermissions.length > 0
+                    ? modulePermissions
+                    : buildDefaultPermissionsForRole(userData.role, userData.division);
+
+            for (const perm of permsToSet) {
+                const targetModules = resolveToPrismaModules(perm.module);
+                for (const prismaModule of targetModules) {
+                    await tx.userModulePermission.upsert({
+                        where: {
+                            userId_module: {
+                                userId: newUser.id,
+                                module: prismaModule,
+                            },
+                        },
+                        update: {
+                            canView: perm.canView !== undefined ? perm.canView : true,
+                            canUpload: perm.canUpload !== undefined ? perm.canUpload : false,
+                            canEdit: perm.canEdit !== undefined ? perm.canEdit : false,
+                            canDelete: perm.canDelete !== undefined ? perm.canDelete : false,
+                            canDownload: perm.canDownload !== undefined ? perm.canDownload : false,
+                        },
+                        create: {
+                            userId: newUser.id,
+                            module: prismaModule,
+                            canView: perm.canView !== undefined ? perm.canView : true,
+                            canUpload: perm.canUpload !== undefined ? perm.canUpload : false,
+                            canEdit: perm.canEdit !== undefined ? perm.canEdit : false,
+                            canDelete: perm.canDelete !== undefined ? perm.canDelete : false,
+                            canDownload: perm.canDownload !== undefined ? perm.canDownload : false,
+                        },
+                    });
+                }
+            }
 
             await tx.auditLog.create({
                 data: {
@@ -195,24 +297,13 @@ export class UserRepository implements IUserRepository {
                         canEdit: newUser.canEdit,
                         canDelete: newUser.canDelete,
                         canDownload: newUser.canDownload,
+                        modulePermissions: permsToSet,
                     },
                 },
             });
 
-            return newUser;
-        });
-    }
-
-    async updateWithAudit(
-        id: string,
-        dto: UpdateUserDto,
-        oldUser: any,
-        currentUserId: string,
-    ): Promise<any> {
-        return this.prisma.$transaction(async (tx) => {
-            const updatedUser = await tx.user.update({
-                where: { id },
-                data: dto,
+            const freshNewUser = await tx.user.findUnique({
+                where: { id: newUser.id },
                 select: {
                     id: true,
                     employeeCode: true,
@@ -225,6 +316,127 @@ export class UserRepository implements IUserRepository {
                     position: true,
                     phone: true,
                     role: true,
+                    roleId: true,
+                    roleRef: {
+                        select: {
+                            id: true,
+                            name: true,
+                            title: true,
+                            isSystem: true,
+                            permissions: true,
+                        },
+                    },
+                    canView: true,
+                    canUpload: true,
+                    canEdit: true,
+                    canDelete: true,
+                    canDownload: true,
+                    isActive: true,
+                    createdAt: true,
+                    modulePermissions: {
+                        select: {
+                            module: true,
+                            canView: true,
+                            canUpload: true,
+                            canEdit: true,
+                            canDelete: true,
+                            canDownload: true,
+                        },
+                    },
+                },
+            });
+
+            return freshNewUser || newUser;
+        });
+    }
+
+    async updateWithAudit(
+        id: string,
+        dto: UpdateUserDto,
+        oldUser: any,
+        currentUserId: string,
+    ): Promise<any> {
+        const result = await this.prisma.$transaction(async (tx) => {
+            const { modulePermissions, ...userData } = dto;
+
+            if (userData.roleId) {
+                const role = await tx.role.findUnique({ where: { id: userData.roleId } });
+                if (role && Object.values(UserRole).includes(role.name as any)) {
+                    userData.role = role.name as UserRole;
+                }
+            } else if (userData.role) {
+                const role = await tx.role.findUnique({ where: { name: String(userData.role) } });
+                if (role) {
+                    userData.roleId = role.id;
+                }
+            }
+
+            await tx.user.update({
+                where: { id },
+                data: userData,
+            });
+
+            if (modulePermissions && modulePermissions.length > 0) {
+                for (const perm of modulePermissions) {
+                    const targetModules = resolveToPrismaModules(perm.module);
+                    for (const prismaModule of targetModules) {
+                        await tx.userModulePermission.upsert({
+                            where: {
+                                userId_module: {
+                                    userId: id,
+                                    module: prismaModule,
+                                },
+                            },
+                            update: {
+                                canView: perm.canView !== undefined ? perm.canView : true,
+                                canUpload: perm.canUpload !== undefined ? perm.canUpload : false,
+                                canEdit: perm.canEdit !== undefined ? perm.canEdit : false,
+                                canDelete: perm.canDelete !== undefined ? perm.canDelete : false,
+                                canDownload: perm.canDownload !== undefined ? perm.canDownload : false,
+                            },
+                            create: {
+                                userId: id,
+                                module: prismaModule,
+                                canView: perm.canView !== undefined ? perm.canView : true,
+                                canUpload: perm.canUpload !== undefined ? perm.canUpload : false,
+                                canEdit: perm.canEdit !== undefined ? perm.canEdit : false,
+                                canDelete: perm.canDelete !== undefined ? perm.canDelete : false,
+                                canDownload: perm.canDownload !== undefined ? perm.canDownload : false,
+                            },
+                        });
+                    }
+                }
+            } else if (modulePermissions !== undefined && Array.isArray(modulePermissions) && modulePermissions.length === 0) {
+                // Clear custom overrides to revert to role template
+                await tx.userModulePermission.deleteMany({
+                    where: { userId: id },
+                });
+            }
+
+            const updatedUser = await tx.user.findUnique({
+                where: { id },
+                select: {
+                    id: true,
+                    employeeCode: true,
+                    username: true,
+                    email: true,
+                    fullName: true,
+                    department: true,
+                    division: true,
+                    unit: true,
+                    position: true,
+                    phone: true,
+                    role: true,
+                    roleId: true,
+                    roleRef: {
+                        select: {
+                            id: true,
+                            name: true,
+                            title: true,
+                            isSystem: true,
+                            permissions: true,
+                        },
+                    },
                     canView: true,
                     canUpload: true,
                     canEdit: true,
@@ -232,6 +444,16 @@ export class UserRepository implements IUserRepository {
                     canDownload: true,
                     isActive: true,
                     updatedAt: true,
+                    modulePermissions: {
+                        select: {
+                            module: true,
+                            canView: true,
+                            canUpload: true,
+                            canEdit: true,
+                            canDelete: true,
+                            canDownload: true,
+                        },
+                    },
                 },
             });
 
@@ -254,6 +476,11 @@ export class UserRepository implements IUserRepository {
 
             return updatedUser;
         });
+
+        // ຍົກເລີກສິດ (Invalidate) Token ຂອງ User ທັນທີ ເພື່ອບັງຄັບໃຫ້ Auto-Refresh ຮັບສິດໃໝ່
+        await this.tokenVersionService.invalidateUser(id);
+
+        return result;
     }
 
     async softDeleteWithAudit(id: string, oldUser: any, currentUserId: string): Promise<void> {
@@ -275,6 +502,9 @@ export class UserRepository implements IUserRepository {
                 },
             });
         });
+
+        // ຍົກເລີກສິດ (Invalidate) Token ທັນທີ
+        await this.tokenVersionService.invalidateUser(id);
     }
 
     async findUserWithPassword(id: string): Promise<User | null> {
@@ -313,5 +543,8 @@ export class UserRepository implements IUserRepository {
                 },
             });
         });
+
+        // ຍົກເລີກສິດ (Invalidate) Token ທັນທີເມື່ອມີການປ່ຽນລະຫັດຜ່ານ
+        await this.tokenVersionService.invalidateUser(id);
     }
 }

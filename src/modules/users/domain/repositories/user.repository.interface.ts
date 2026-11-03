@@ -25,12 +25,14 @@ export interface IUserRepository {
             unit?: string;
             position?: string;
             phone?: string;
-            role: UserRole;
+            role?: UserRole;
+            roleId?: string;
             canView: boolean;
             canUpload: boolean;
             canEdit: boolean;
             canDelete: boolean;
             canDownload: boolean;
+            modulePermissions?: any[];
         },
         currentUserId: string,
     ): Promise<any>;

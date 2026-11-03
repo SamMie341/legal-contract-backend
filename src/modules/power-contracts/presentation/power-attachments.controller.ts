@@ -27,8 +27,7 @@ import { DivisionGuard } from '../../../core/guards/division.guard.js';
 import { RequiredModule } from '../../../core/decorators/required-module.decorator.js';
 import { SystemModule } from '../../../core/constants/division.constant.js';
 import { CurrentUser } from '../../../core/decorators/current-user.decorator.js';
-import { UserRole } from '@prisma/client';
-import { isPowerContractDivision } from '../../../core/utils/division-helper.util.js';
+import { canAccessModule } from '../../../core/utils/division-helper.util.js';
 
 import { UploadPowerAttachmentUseCase } from '../application/use-cases/upload-power-attachment.use-case.js';
 import { DownloadPowerAttachmentUseCase } from '../application/use-cases/download-power-attachment.use-case.js';
@@ -55,11 +54,7 @@ const storage = diskStorage({
 const fileFilter = (req: any, file: Express.Multer.File, cb: any) => {
     const user = req.user;
     if (user) {
-        const isPowerDiv = isPowerContractDivision(user.division);
-        const canUpload =
-            user.role === UserRole.ADMIN ||
-            (isPowerDiv && (user.role === UserRole.MAIN_USER || user.canUpload === true));
-        if (!canUpload) {
+        if (!canAccessModule(user, SystemModule.POWER_CONTRACTS, 'canUpload')) {
             return cb(
                 new ForbiddenException(
                     'ທ່ານບໍ່ມີສິດອັບໂຫຼດໄຟລ໌ແນບ',

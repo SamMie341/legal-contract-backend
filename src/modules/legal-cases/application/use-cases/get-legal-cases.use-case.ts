@@ -1,8 +1,8 @@
 import { Injectable, Inject, ForbiddenException } from '@nestjs/common';
-import { UserRole } from '@prisma/client';
 import { QueryLegalCaseDto } from '../dto/query-legal-case.dto.js';
 import * as repoInterface from '../../domain/repositories/legal-case.repository.interface.js';
-import { isDisputeResolutionDivision } from '../../../../core/utils/division-helper.util.js';
+import { canAccessModule } from '../../../../core/utils/division-helper.util.js';
+import { SystemModule } from '../../../../core/constants/division.constant.js';
 
 @Injectable()
 export class GetLegalCasesUseCase {
@@ -12,11 +12,7 @@ export class GetLegalCasesUseCase {
     ) { }
 
     async execute(query: QueryLegalCaseDto, user: any) {
-        if (
-            user &&
-            user.role !== UserRole.ADMIN &&
-            (!isDisputeResolutionDivision(user?.division) || user.canView === false)
-        ) {
+        if (user && !canAccessModule(user, SystemModule.LEGAL_CASES, 'canView')) {
             throw new ForbiddenException('ທ່ານບໍ່ມີສິດເບິ່ງຂໍ້ມູນຄະດີ');
         }
 

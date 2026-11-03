@@ -1,7 +1,7 @@
 import { Injectable, Inject, ForbiddenException } from '@nestjs/common';
-import { UserRole } from '@prisma/client';
 import * as contractRepositoryInterface from '../../domain/repositories/contract.repository.interface.js';
-import { isGeneralContractDivision } from '../../../../core/utils/division-helper.util.js';
+import { canAccessModule } from '../../../../core/utils/division-helper.util.js';
+import { SystemModule } from '../../../../core/constants/division.constant.js';
 
 @Injectable()
 export class GetContractsUseCase {
@@ -11,11 +11,7 @@ export class GetContractsUseCase {
     ) { }
 
     async execute(query: any, user?: any) {
-        if (
-            user &&
-            user.role !== UserRole.ADMIN &&
-            (!isGeneralContractDivision(user.division) || user.canView === false)
-        ) {
+        if (user && !canAccessModule(user, SystemModule.CONTRACTS, 'canView')) {
             throw new ForbiddenException('ທ່ານບໍ່ມີສິດເບິ່ງຂໍ້ມູນສັນຍາ');
         }
 

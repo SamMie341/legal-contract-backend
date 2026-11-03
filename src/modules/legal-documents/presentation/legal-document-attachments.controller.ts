@@ -26,7 +26,7 @@ import { DivisionGuard } from '../../../core/guards/division.guard.js';
 import { RequiredModule } from '../../../core/decorators/required-module.decorator.js';
 import { SystemModule } from '../../../core/constants/division.constant.js';
 import { CurrentUser } from '../../../core/decorators/current-user.decorator.js';
-import { UserRole } from '@prisma/client';
+import { canAccessModule } from '../../../core/utils/division-helper.util.js';
 
 import { UploadDocumentAttachmentUseCase } from '../application/use-cases/upload-document-attachment.use-case.js';
 import { GetDocumentAttachmentsUseCase } from '../application/use-cases/get-document-attachments.use-case.js';
@@ -54,11 +54,7 @@ const storage = diskStorage({
 const fileFilter = (req: any, file: Express.Multer.File, cb: any) => {
     const user = req.user;
     if (user) {
-        const canUpload =
-            user.role === UserRole.ADMIN ||
-            user.role === UserRole.MAIN_USER ||
-            user.canUpload === true;
-        if (!canUpload) {
+        if (!canAccessModule(user, SystemModule.LEGAL_DOCUMENTS, 'canUpload')) {
             return cb(
                 new ForbiddenException(
                     'ທ່ານບໍ່ມີສິດອັບໂຫຼດໄຟລ໌ແນບ',

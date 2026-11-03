@@ -1,8 +1,8 @@
 import { Injectable, Inject, BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
-import { UserRole } from '@prisma/client';
 import { UpdateLegalCaseDto } from '../dto/update-legal-case.dto.js';
 import * as repoInterface from '../../domain/repositories/legal-case.repository.interface.js';
-import { isDisputeResolutionDivision } from '../../../../core/utils/division-helper.util.js';
+import { canAccessModule } from '../../../../core/utils/division-helper.util.js';
+import { SystemModule } from '../../../../core/constants/division.constant.js';
 
 @Injectable()
 export class UpdateLegalCaseUseCase {
@@ -14,11 +14,7 @@ export class UpdateLegalCaseUseCase {
     async execute(idOrCode: string, dto: UpdateLegalCaseDto, user: any) {
         const isObjectUser = typeof user === 'object' && user !== null;
         if (isObjectUser) {
-            const isDisputeDiv = isDisputeResolutionDivision(user.division);
-            const canEdit =
-                user.role === UserRole.ADMIN ||
-                (isDisputeDiv && (user.role === UserRole.MAIN_USER || user.canEdit === true));
-            if (!canEdit) {
+            if (!canAccessModule(user, SystemModule.LEGAL_CASES, 'canEdit')) {
                 throw new ForbiddenException('ທ່ານບໍ່ມີສິດແກ້ໄຂຂໍ້ມູນຄະດີ');
             }
         }

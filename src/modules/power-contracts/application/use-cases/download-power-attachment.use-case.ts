@@ -1,7 +1,7 @@
 import { Injectable, Inject, NotFoundException, ForbiddenException } from '@nestjs/common';
 import * as powerContractAttachmentRepositoryInterface from '../../domain/repositories/power-contract-attachment.repository.interface.js';
-import { UserRole } from '@prisma/client';
-import { isPowerContractDivision } from '../../../../core/utils/division-helper.util.js';
+import { canAccessModule } from '../../../../core/utils/division-helper.util.js';
+import { SystemModule } from '../../../../core/constants/division.constant.js';
 
 @Injectable()
 export class DownloadPowerAttachmentUseCase {
@@ -11,13 +11,8 @@ export class DownloadPowerAttachmentUseCase {
     ) { }
 
     async execute(attachmentId: string, user: any, ipAddress?: string, userAgent?: string) {
-        // 1. ກວດສອບສິດການດາວໂຫຼດ (Admin ໂຫຼດໄດ້ສະເໝີ ຫຼື ຜູ້ໃຊ້ພະແນກສັນຍາຊື້-ຂາຍໄຟຟ້າ ທີ່ມີສິດ canDownload)
-        const isAdmin = user.role === UserRole.ADMIN;
-        const isAuthorizedUser =
-            isPowerContractDivision(user?.division) &&
-            (user.role === UserRole.MAIN_USER || user.canDownload === true);
-
-        if (!isAdmin && !isAuthorizedUser) {
+        // 1. ກວດສອບສິດການດາວໂຫຼດ
+        if (!canAccessModule(user, SystemModule.POWER_CONTRACTS, 'canDownload')) {
             throw new ForbiddenException(
                 'ທ່ານບໍ່ມີສິດດາວໂຫຼດໄຟລ໌ນີ້',
             );

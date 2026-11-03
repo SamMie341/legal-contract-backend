@@ -1,7 +1,7 @@
 import { Injectable, Inject, ForbiddenException } from '@nestjs/common';
 import * as contractAttachmentRepositoryInterface from '../../domain/repositories/contract-attachment.repository.interface.js';
-import { UserRole } from '@prisma/client';
-import { isGeneralContractDivision } from '../../../../core/utils/division-helper.util.js';
+import { canAccessModule } from '../../../../core/utils/division-helper.util.js';
+import { SystemModule } from '../../../../core/constants/division.constant.js';
 
 @Injectable()
 export class DeleteAttachmentUseCase {
@@ -11,11 +11,7 @@ export class DeleteAttachmentUseCase {
     ) { }
 
     async execute(attachmentId: string, user: any) {
-        const isContractDiv = isGeneralContractDivision(user?.division);
-        const canDelete =
-            user.role === UserRole.ADMIN ||
-            (isContractDiv && (user.role === UserRole.MAIN_USER || user.canDelete === true));
-        if (!canDelete) {
+        if (!canAccessModule(user, SystemModule.CONTRACTS, 'canDelete')) {
             throw new ForbiddenException('ທ່ານບໍ່ມີສິດລົບໄຟລ໌ແນບ');
         }
 

@@ -1,7 +1,8 @@
 import { Injectable, CanActivate, ExecutionContext, ForbiddenException, Optional } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { AuditAction, UserRole } from '@prisma/client';
+import { AuditAction } from '@prisma/client';
 import { REQUIRED_MODULE_KEY } from '../decorators/required-module.decorator.js';
+import { MODULE_ACCESS_KEY, ModuleAccessRequirement, PermissionAction } from '../decorators/require-access.decorator.js';
 import { SystemModule } from '../constants/division.constant.js';
 import {
     canAccessModule,
@@ -20,37 +21,68 @@ export class DivisionGuard implements CanActivate {
     canActivate(context: ExecutionContext): boolean {
         const req = context.switchToHttp().getRequest();
         const requestedPath = req?.originalUrl || req?.url || req?.path || '';
-        const httpMethod = req?.method || 'UNKNOWN';
+        const httpMethod = (req?.method || 'GET').toUpperCase();
         const ipAddress = req?.ip || req?.socket?.remoteAddress || null;
         const user = req?.user;
 
-        // 1. ອ່ານຄ່າ Module ທີ່ຖືກກຳນົດຈາກ @RequiredModule() ຜ່ານ decorator
+        // 1. ອ່ານຄ່າ Module & Action ທີ່ຖືກກຳນົດຈາກ @RequireAccess() (Granular Action)
+        const accessRequirement = this.reflector.getAllAndOverride<ModuleAccessRequirement>(MODULE_ACCESS_KEY, [
+            context.getHandler(),
+            context.getClass(),
+        ]);
+
+        // 2. ອ່ານຄ່າ Module ທີ່ຖືກກຳນົດຈາກ @RequiredModule() (Class / Handler level)
         const metadataModule = this.reflector.getAllAndOverride<SystemModule>(REQUIRED_MODULE_KEY, [
             context.getHandler(),
             context.getClass(),
         ]);
 
-        // 2. ກວດສອບໂມດູນຈາກ URL Path ທີ່ຖືກ Request ເຂົ້າມາ (ດັກຈັບການປ່ຽນ Path / Path Tampering)
+        // 3. ກວດສອບໂມດູນຈາກ URL Path ທີ່ຖືກ Request ເຂົ້າມາ (ດັກຈັບການປ່ຽນ Path / Path Tampering)
         const pathModule = resolveModuleFromPath(requestedPath);
+
+        // 4. ກຳນົດ Action ທີ່ຕ້ອງການ
+        let requiredAction: PermissionAction = 'canView';
+        if (accessRequirement?.action) {
+            requiredAction = accessRequirement.action;
+        } else {
+            // Infer action from HTTP method
+            if (httpMethod === 'POST') requiredAction = 'canUpload';
+            else if (httpMethod === 'PATCH' || httpMethod === 'PUT') requiredAction = 'canEdit';
+            else if (httpMethod === 'DELETE') requiredAction = 'canDelete';
+            else requiredAction = 'canView';
+        }
 
         // ລວບລວມໂມດູນທີ່ຕ້ອງກວດສອບ
         const modulesToCheck = new Set<SystemModule>();
-        if (metadataModule) modulesToCheck.add(metadataModule);
-        if (pathModule) modulesToCheck.add(pathModule);
+        if (accessRequirement?.module) {
+            modulesToCheck.add(accessRequirement.module as any);
+        }
+        if (metadataModule) {
+            modulesToCheck.add(metadataModule);
+        }
+        if (pathModule) {
+            modulesToCheck.add(pathModule);
+        }
 
-        // ຫາກບໍ່ມີທັງ @RequiredModule() ແລະ ບໍ່ກົງກັບໂມດູນສະເພາະໃດໆ ໃຫ້ຜ່ານໄດ້
+        // ຫາກບໍ່ມີທັງ @RequireAccess(), @RequiredModule() ແລະ ບໍ່ກົງກັບໂມດູນສະເພາະໃດໆ ໃຫ້ຜ່ານໄດ້
         if (modulesToCheck.size === 0) {
             return true;
         }
 
-        // 3. Admin ສາມາດເຂົ້າເຖິງໄດ້ທຸກໂມດູນ
-        if (user?.role === UserRole.ADMIN) {
+        // 5. Admin ສາມາດເຂົ້າເຖິງໄດ້ທຸກໂມດູນ ແລະ ທຸກ Action
+        const roleName = String(user?.roleRef?.name || user?.role || '').toUpperCase();
+        if (roleName === 'ADMIN') {
             return true;
         }
 
-        // 4. ກວດສອບສິດການເຂົ້າເຖິງໂມດູນຕາມ Division ຂອງ User
+        // 6. ລະດັບຝ່າຍ (DEPARTMENT_HEAD) ສາມາດເຂົ້າເບິ່ງ (canView) ແລະ ດາວໂຫຼດ (canDownload) ໄດ້ທຸກໂມດູນຫຼັກ
+        if (roleName === 'DEPARTMENT_HEAD' && (requiredAction === 'canView' || requiredAction === 'canDownload')) {
+            return true;
+        }
+
+        // 7. ກວດສອບສິດການເຂົ້າເຖິງໂມດູນຕາມ Module-Scoped RBAC & Division ຂອງ User
         for (const targetModule of modulesToCheck) {
-            const hasAccess = canAccessModule(user, targetModule);
+            const hasAccess = canAccessModule(user, targetModule, requiredAction);
 
             if (!hasAccess) {
                 const requiredDivision = getRequiredDivisionForModule(targetModule);
@@ -60,7 +92,7 @@ export class DivisionGuard implements CanActivate {
 
                 // ບັນທຶກ Security Alert ເຕືອນໄພໃນ Console
                 console.warn(
-                    `🚨 [SecurityAlert: Path Tampering Detected] User "${username}" (ID: ${userId || 'N/A'}, Division: "${userDivision}") attempted unauthorized cross-division access to path: "${requestedPath}" [${httpMethod}]. Required Division: "${requiredDivision}". Target Module: "${targetModule}". Access blocked.`,
+                    `🚨 [SecurityAlert: Path Tampering / Unauthorized Access Detected] User "${username}" (ID: ${userId || 'N/A'}, Division: "${userDivision}") attempted unauthorized access to path: "${requestedPath}" [${httpMethod}]. Required: "${targetModule}" (${requiredAction}). Access blocked.`,
                 );
 
                 // ບັນທຶກ Audit Log ລົງ Database ແບບ Asynchronous (ຫາກມີ PrismaService ແລະ User ID)
@@ -80,6 +112,7 @@ export class DivisionGuard implements CanActivate {
                                     httpMethod,
                                     requiredDivision,
                                     targetModule,
+                                    requiredAction,
                                     ipAddress,
                                 },
                                 ipAddress,
@@ -95,12 +128,13 @@ export class DivisionGuard implements CanActivate {
                     statusCode: 403,
                     error: 'Forbidden',
                     code: 'PATH_DIVISION_MISMATCH',
-                    message: `ທ່ານບໍ່ມີສິດເຂົ້າເຖິງໂມດູນນີ້ ເນື່ອງຈາກສັງກັດພະແນກບໍ່ກົງກັນ (ອະນຸຍາດສະເພາະ: ${requiredDivision})`,
+                    message: `ທ່ານບໍ່ມີສິດ (${requiredAction}) ໃນໂມດູນນີ້ (ອະນຸຍາດສະເພາະ: ${requiredDivision} ຫຼື ຜູ້ໄດ້ຮັບສິດພິເສດ)`,
                     details: {
                         attemptedPath: requestedPath,
                         userDivision: user?.division || null,
                         requiredDivision,
                         targetModule,
+                        requiredAction,
                     },
                 });
             }
@@ -109,3 +143,6 @@ export class DivisionGuard implements CanActivate {
         return true;
     }
 }
+
+// Alias for clean architecture and backward compatibility
+export { DivisionGuard as ModuleAccessGuard };

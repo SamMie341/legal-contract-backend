@@ -47,7 +47,7 @@ export class CreateUserUseCase {
         const division = dto.division || hrmEmployee?.office?.division?.division_name || '';
         const unit = hrmEmployee?.office?.unit?.unit_name || '';
         const position = hrmEmployee?.office?.position?.pos_name || '';
-        const email = dto.email || hrmEmployee?.email || `${empCode}@edl.com.la`;
+        const email = dto.email || hrmEmployee?.email || '';
         const phone = dto.phone || hrmEmployee?.phone || '';
 
         const defaultPassword = `EDL@${empCode}`;
@@ -67,11 +67,13 @@ export class CreateUserUseCase {
                 position,
                 phone,
                 role: dto.role || UserRole.VIEWER,
+                roleId: dto.roleId,
                 canView: dto.canView !== undefined ? dto.canView : true,
                 canUpload: dto.canUpload || false,
                 canEdit: dto.canEdit || false,
                 canDelete: dto.canDelete || false,
                 canDownload: dto.canDownload || false,
+                modulePermissions: dto.modulePermissions,
             },
             currentUserId,
         );

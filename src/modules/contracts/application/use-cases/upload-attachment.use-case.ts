@@ -1,8 +1,8 @@
 import { Injectable, Inject, BadRequestException, NotFoundException, ForbiddenException } from '@nestjs/common';
-import { UserRole } from '@prisma/client';
 import * as contractAttachmentRepositoryInterface from '../../domain/repositories/contract-attachment.repository.interface.js';
 import { CONTRACT_REPOSITORY, type IContractRepository } from '../../domain/repositories/contract.repository.interface.js';
-import { isGeneralContractDivision } from '../../../../core/utils/division-helper.util.js';
+import { canAccessModule } from '../../../../core/utils/division-helper.util.js';
+import { SystemModule } from '../../../../core/constants/division.constant.js';
 
 @Injectable()
 export class UploadAttachmentUseCase {
@@ -16,11 +16,7 @@ export class UploadAttachmentUseCase {
     async execute(contractId: string, file: Express.Multer.File, user: any) {
         const isObjectUser = typeof user === 'object' && user !== null;
         if (isObjectUser) {
-            const isContractDiv = isGeneralContractDivision(user.division);
-            const canUpload =
-                user.role === UserRole.ADMIN ||
-                (isContractDiv && (user.role === UserRole.MAIN_USER || user.canUpload === true));
-            if (!canUpload) {
+            if (!canAccessModule(user, SystemModule.CONTRACTS, 'canUpload')) {
                 throw new ForbiddenException('ທ່ານບໍ່ມີສິດອັບໂຫຼດໄຟລ໌ແນບສັນຍາ');
             }
         }

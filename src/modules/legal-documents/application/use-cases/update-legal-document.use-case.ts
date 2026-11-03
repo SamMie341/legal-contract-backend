@@ -1,8 +1,8 @@
 import { Injectable, Inject, BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
-import { UserRole } from '@prisma/client';
 import { UpdateLegalDocumentDto } from '../dto/update-legal-document.dto.js';
 import * as repoInterface from '../../domain/repositories/legal-document.repository.interface.js';
-import { isLegalDocumentDivision } from '../../../../core/utils/division-helper.util.js';
+import { canAccessModule } from '../../../../core/utils/division-helper.util.js';
+import { SystemModule } from '../../../../core/constants/division.constant.js';
 
 @Injectable()
 export class UpdateLegalDocumentUseCase {
@@ -14,11 +14,7 @@ export class UpdateLegalDocumentUseCase {
     async execute(id: string, dto: UpdateLegalDocumentDto, user: any) {
         const isObjectUser = typeof user === 'object' && user !== null;
         if (isObjectUser) {
-            const isLegalDiv = isLegalDocumentDivision(user.division);
-            const canEdit =
-                user.role === UserRole.ADMIN ||
-                (isLegalDiv && (user.role === UserRole.MAIN_USER || user.canEdit === true));
-            if (!canEdit) {
+            if (!canAccessModule(user, SystemModule.LEGAL_DOCUMENTS, 'canEdit')) {
                 throw new ForbiddenException('ທ່ານບໍ່ມີສິດແກ້ໄຂນິຕິກຳ');
             }
         }

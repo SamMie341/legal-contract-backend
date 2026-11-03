@@ -23,7 +23,8 @@ export class RolesGuard implements CanActivate {
         const { user } = context.switchToHttp().getRequest();
 
         // 3. ตรวจสอบว่า Role ของ User ตรงกับที่อนุญาตหรือไม่
-        const hasRole = requiredRoles.includes(user.role);
+        const userRole = user?.roleRef?.name || user?.role;
+        const hasRole = requiredRoles.some((r) => String(r).toUpperCase() === String(userRole).toUpperCase());
 
         if (!hasRole) {
             throw new ForbiddenException('ທ່ານບໍ່ມີສິດເຂົ້າເຖິງຂໍ້ມູນນີ້ (Forbidden: Insufficient Permissions)');

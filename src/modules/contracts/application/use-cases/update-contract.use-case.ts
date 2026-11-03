@@ -1,8 +1,8 @@
 import { Injectable, Inject, ForbiddenException, BadRequestException } from '@nestjs/common';
 import * as contractRepositoryInterface from '../../domain/repositories/contract.repository.interface.js';
 import { UpdateContractDto } from '../dto/update-contract.dto.js';
-import { UserRole } from '@prisma/client';
-import { isGeneralContractDivision } from '../../../../core/utils/division-helper.util.js';
+import { canAccessModule } from '../../../../core/utils/division-helper.util.js';
+import { SystemModule } from '../../../../core/constants/division.constant.js';
 
 @Injectable()
 export class UpdateContractUseCase {
@@ -13,11 +13,7 @@ export class UpdateContractUseCase {
 
     async execute(id: string, dto: UpdateContractDto, user: any) {
         // 1. ตรวจสอบสิทธิ์การแก้ไข (Admin, Main User, หรือผู้มีสิทธิ์ canEdit ตาม Division)
-        const isContractDiv = isGeneralContractDivision(user?.division);
-        const canEdit =
-            user.role === UserRole.ADMIN ||
-            (isContractDiv && (user.role === UserRole.MAIN_USER || user.canEdit === true));
-        if (!canEdit) {
+        if (!canAccessModule(user, SystemModule.CONTRACTS, 'canEdit')) {
             throw new ForbiddenException('ທ່ານບໍ່ມີສິດແກ້ໄຂຂໍ້ມູນສັນຍາ');
         }
 

@@ -1,8 +1,9 @@
 import { Injectable, Inject, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { CreateContractDto } from '../dto/create-contract.dto.js';
 import * as contractRepositoryInterface from '../../domain/repositories/contract.repository.interface.js';
-import { ContractStatus, UserRole } from '@prisma/client';
-import { isGeneralContractDivision } from '../../../../core/utils/division-helper.util.js';
+import { ContractStatus } from '@prisma/client';
+import { canAccessModule } from '../../../../core/utils/division-helper.util.js';
+import { SystemModule } from '../../../../core/constants/division.constant.js';
 
 @Injectable()
 export class CreateContractUseCase {
@@ -15,11 +16,7 @@ export class CreateContractUseCase {
         // 0. ตรวจสอบสิทธิ์การสร้าง/อัปโหลดสัญญา (Admin, Main User หรือผู้มีสิทธิ์ canUpload ตาม Division)
         const isObjectUser = typeof user === 'object' && user !== null;
         if (isObjectUser) {
-            const isContractDiv = isGeneralContractDivision(user.division);
-            const canUpload =
-                user.role === UserRole.ADMIN ||
-                (isContractDiv && (user.role === UserRole.MAIN_USER || user.canUpload === true));
-            if (!canUpload) {
+            if (!canAccessModule(user, SystemModule.CONTRACTS, 'canUpload')) {
                 throw new ForbiddenException('ທ່ານບໍ່ມີສິດສ້າງ ຫຼື ອັບໂຫຼດສັນຍາ');
             }
         }

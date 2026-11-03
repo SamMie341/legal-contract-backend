@@ -1,7 +1,7 @@
 import { Injectable, Inject, NotFoundException, ForbiddenException } from '@nestjs/common';
 import * as contractAttachmentRepositoryInterface from '../../domain/repositories/contract-attachment.repository.interface.js';
-import { UserRole } from '@prisma/client';
-import { isGeneralContractDivision } from '../../../../core/utils/division-helper.util.js';
+import { canAccessModule } from '../../../../core/utils/division-helper.util.js';
+import { SystemModule } from '../../../../core/constants/division.constant.js';
 
 @Injectable()
 export class PreviewAttachmentUseCase {
@@ -11,13 +11,8 @@ export class PreviewAttachmentUseCase {
     ) { }
 
     async execute(attachmentId: string, user: any) {
-        // 1. ตรวจสอบสิทธิ์การดูข้อมูล (canView ตาม Division)
-        const isContractDiv = isGeneralContractDivision(user?.division);
-        const canView =
-            user.role === UserRole.ADMIN ||
-            (isContractDiv && (user.role === UserRole.MAIN_USER || user.canView !== false));
-
-        if (!canView) {
+        // 1. ตรวจสอบสิทธิ์การดูข้อมูล (canView ตาม Module RBAC)
+        if (!canAccessModule(user, SystemModule.CONTRACTS, 'canView')) {
             throw new ForbiddenException('ທ່ານບໍ່ມີສິດເບິ່ງໄຟລ໌ນີ້');
         }
 

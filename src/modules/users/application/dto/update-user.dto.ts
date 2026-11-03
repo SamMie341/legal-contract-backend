@@ -1,12 +1,22 @@
-import { IsOptional, IsEnum, IsBoolean, IsString } from 'class-validator';
+import { IsOptional, IsEnum, IsBoolean, IsString, IsArray, ValidateNested, IsUUID } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
 import { UserRole } from '@prisma/client';
+import { ModulePermissionDto } from './module-permission.dto.js';
 
 export class UpdateUserDto {
     @ApiPropertyOptional({ enum: UserRole, description: 'ບົດບາດ (Role)' })
     @IsOptional()
     @IsEnum(UserRole)
     role?: UserRole;
+
+    @ApiPropertyOptional({
+        description: 'ID ຂອງ Role ທີ່ຕ້ອງການຜູກ (Custom Role ID)',
+        example: '33def50d-ba6f-41b3-823d-1357684ecf56',
+    })
+    @IsOptional()
+    @IsUUID()
+    roleId?: string;
 
     @ApiPropertyOptional({ description: 'ເປີດ/ປິດ ການນຳໃຊ້ບັນຊີ' })
     @IsOptional()
@@ -53,4 +63,14 @@ export class UpdateUserDto {
     @IsOptional()
     @IsBoolean()
     canDownload?: boolean;
+
+    @ApiPropertyOptional({
+        description: 'Matrix ສິດລາຍໂມດູນ (Module-Scoped Permissions)',
+        type: [ModulePermissionDto],
+    })
+    @IsOptional()
+    @IsArray()
+    @ValidateNested({ each: true })
+    @Type(() => ModulePermissionDto)
+    modulePermissions?: ModulePermissionDto[];
 }

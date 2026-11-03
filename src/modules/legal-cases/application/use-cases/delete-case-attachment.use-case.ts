@@ -1,7 +1,7 @@
 import { Injectable, Inject, NotFoundException, ForbiddenException } from '@nestjs/common';
-import { UserRole } from '@prisma/client';
 import * as attachmentRepoInterface from '../../domain/repositories/case-attachment.repository.interface.js';
-import { isDisputeResolutionDivision } from '../../../../core/utils/division-helper.util.js';
+import { canAccessModule } from '../../../../core/utils/division-helper.util.js';
+import { SystemModule } from '../../../../core/constants/division.constant.js';
 
 @Injectable()
 export class DeleteCaseAttachmentUseCase {
@@ -13,11 +13,7 @@ export class DeleteCaseAttachmentUseCase {
     async execute(attachmentId: string, user: any) {
         const isObjectUser = typeof user === 'object' && user !== null;
         if (isObjectUser) {
-            const isDisputeDiv = isDisputeResolutionDivision(user.division);
-            const canDelete =
-                user.role === UserRole.ADMIN ||
-                (isDisputeDiv && (user.role === UserRole.MAIN_USER || user.canDelete === true));
-            if (!canDelete) {
+            if (!canAccessModule(user, SystemModule.LEGAL_CASES, 'canDelete')) {
                 throw new ForbiddenException('ທ່ານບໍ່ມີສິດລົບໄຟລ໌ແນບ');
             }
         }

@@ -1,9 +1,9 @@
 import { Injectable, Inject, NotFoundException, ForbiddenException } from '@nestjs/common';
-import { UserRole } from '@prisma/client';
 import * as contractRepositoryInterface from '../../domain/repositories/contract.repository.interface.js';
 import { GetContractHistoryDto } from '../dto/get-contract-history.dto.js';
 import { formatContractAuditLog } from '../helpers/contract-history-formatter.helper.js';
-import { isGeneralContractDivision } from '../../../../core/utils/division-helper.util.js';
+import { canAccessModule } from '../../../../core/utils/division-helper.util.js';
+import { SystemModule } from '../../../../core/constants/division.constant.js';
 
 @Injectable()
 export class GetContractHistoryUseCase {
@@ -14,11 +14,7 @@ export class GetContractHistoryUseCase {
 
     async execute(id: string, query: GetContractHistoryDto, user?: any) {
         // 1. ກວດສອບສິດການເຂົ້າເຖິງ (Admin, Main User ຫຼື ຜູ້ມີສິດ canView ຕາມ Division)
-        if (
-            user &&
-            user.role !== UserRole.ADMIN &&
-            (!isGeneralContractDivision(user.division) || user.canView === false)
-        ) {
+        if (user && !canAccessModule(user, SystemModule.CONTRACTS, 'canView')) {
             throw new ForbiddenException('ທ່ານບໍ່ມີສິດເບິ່ງປະຫວັດການແກ້ໄຂສັນຍາ');
         }
 

@@ -1,8 +1,8 @@
 import { Injectable, Inject, BadRequestException, NotFoundException, ForbiddenException } from '@nestjs/common';
-import { UserRole } from '@prisma/client';
 import * as powerContractAttachmentRepositoryInterface from '../../domain/repositories/power-contract-attachment.repository.interface.js';
 import * as powerContractRepositoryInterface from '../../domain/repositories/power-contract.repository.interface.js';
-import { isPowerContractDivision } from '../../../../core/utils/division-helper.util.js';
+import { canAccessModule } from '../../../../core/utils/division-helper.util.js';
+import { SystemModule } from '../../../../core/constants/division.constant.js';
 
 @Injectable()
 export class UploadPowerAttachmentUseCase {
@@ -16,11 +16,7 @@ export class UploadPowerAttachmentUseCase {
     async execute(powerContractId: string, file: Express.Multer.File, user: any) {
         const isObjectUser = typeof user === 'object' && user !== null;
         if (isObjectUser) {
-            const isPowerDiv = isPowerContractDivision(user.division);
-            const canUpload =
-                user.role === UserRole.ADMIN ||
-                (isPowerDiv && (user.role === UserRole.MAIN_USER || user.canUpload === true));
-            if (!canUpload) {
+            if (!canAccessModule(user, SystemModule.POWER_CONTRACTS, 'canUpload')) {
                 throw new ForbiddenException(
                     'ທ່ານບໍ່ມີສິດອັບໂຫຼດໄຟລ໌ແນບສັນຍາຊື້-ຂາຍໄຟຟ້າ',
                 );

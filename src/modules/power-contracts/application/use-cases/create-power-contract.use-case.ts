@@ -1,8 +1,9 @@
 import { Injectable, Inject, ForbiddenException } from '@nestjs/common';
 import { CreatePowerContractDto } from '../dto/create-power-contract.dto.js';
 import * as powerContractRepositoryInterface from '../../domain/repositories/power-contract.repository.interface.js';
-import { ContractStatus, UserRole } from '@prisma/client';
-import { isPowerContractDivision } from '../../../../core/utils/division-helper.util.js';
+import { ContractStatus } from '@prisma/client';
+import { canAccessModule } from '../../../../core/utils/division-helper.util.js';
+import { SystemModule } from '../../../../core/constants/division.constant.js';
 
 @Injectable()
 export class CreatePowerContractUseCase {
@@ -12,14 +13,10 @@ export class CreatePowerContractUseCase {
     ) { }
 
     async execute(dto: CreatePowerContractDto, user: any) {
-        // 0. ກວດສອບສິດການສ້າງ/ອັບໂຫຼດສັນຍາ (Admin, Main User ຫຼື ຜູ້ມີສິດ canUpload ຕາມ Division)
+        // 0. ກວດສອບສິດການສ້າງ/ອັບໂຫຼດສັນຍາ
         const isObjectUser = typeof user === 'object' && user !== null;
         if (isObjectUser) {
-            const isPowerDiv = isPowerContractDivision(user.division);
-            const canUpload =
-                user.role === UserRole.ADMIN ||
-                (isPowerDiv && (user.role === UserRole.MAIN_USER || user.canUpload === true));
-            if (!canUpload) {
+            if (!canAccessModule(user, SystemModule.POWER_CONTRACTS, 'canUpload')) {
                 throw new ForbiddenException(
                     'ທ່ານບໍ່ມີສິດສ້າງ ຫຼື ອັບໂຫຼດສັນຍາຊື້-ຂາຍໄຟຟ້າ',
                 );

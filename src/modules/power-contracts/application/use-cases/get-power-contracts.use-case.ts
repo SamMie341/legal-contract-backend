@@ -1,6 +1,8 @@
-import { Injectable, Inject } from '@nestjs/common';
+import { Injectable, Inject, ForbiddenException } from '@nestjs/common';
 import * as powerContractRepositoryInterface from '../../domain/repositories/power-contract.repository.interface.js';
 import { QueryPowerContractDto } from '../dto/query-power-contract.dto.js';
+import { canAccessModule } from '../../../../core/utils/division-helper.util.js';
+import { SystemModule } from '../../../../core/constants/division.constant.js';
 
 @Injectable()
 export class GetPowerContractsUseCase {
@@ -9,7 +11,11 @@ export class GetPowerContractsUseCase {
         private readonly powerContractRepository: powerContractRepositoryInterface.IPowerContractRepository,
     ) { }
 
-    async execute(query: QueryPowerContractDto, _user?: any) {
+    async execute(query: QueryPowerContractDto, user?: any) {
+        if (user && !canAccessModule(user, SystemModule.POWER_CONTRACTS, 'canView')) {
+            throw new ForbiddenException('ທ່ານບໍ່ມີສິດເຂົ້າເຖິງຂໍ້ມູນສັນຍາຊື້-ຂາຍໄຟຟ້າ');
+        }
+
         const page = Number(query.page) || 1;
         const limit = Number(query.limit) || 10;
         const skip = (page - 1) * limit;

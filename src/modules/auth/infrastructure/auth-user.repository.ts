@@ -7,7 +7,7 @@ import { PrismaService } from '../../../infrastructure/database/prisma.service.j
 export class AuthUserRepository implements IAuthUserRepository {
     constructor(private readonly prisma: PrismaService) { }
 
-    async findByUsernameOrEmpCode(username: string): Promise<User | null> {
+    async findByUsernameOrEmpCode(username: string): Promise<any | null> {
         return this.prisma.user.findFirst({
             where: {
                 OR: [
@@ -15,12 +15,41 @@ export class AuthUserRepository implements IAuthUserRepository {
                     { username: username },
                 ],
             },
+            include: {
+                modulePermissions: true,
+                roleRef: {
+                    include: {
+                        permissions: true,
+                    },
+                },
+            },
         });
     }
 
     async findByEmployeeCode(empCode: string): Promise<User | null> {
         return this.prisma.user.findUnique({
             where: { employeeCode: empCode },
+        });
+    }
+
+    async findByIdWithPermissions(userId: string): Promise<any | null> {
+        return this.prisma.user.findUnique({
+            where: { id: userId },
+            include: {
+                modulePermissions: true,
+                roleRef: {
+                    include: {
+                        permissions: true,
+                    },
+                },
+            },
+        });
+    }
+
+    async updateRefreshToken(userId: string, refreshToken: string | null): Promise<void> {
+        await this.prisma.user.update({
+            where: { id: userId },
+            data: { refreshToken },
         });
     }
 

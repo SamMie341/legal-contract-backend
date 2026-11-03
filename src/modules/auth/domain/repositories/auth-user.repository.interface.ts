@@ -3,8 +3,10 @@ import { User, UserRole } from '@prisma/client';
 export const AUTH_USER_REPOSITORY = Symbol('AUTH_USER_REPOSITORY');
 
 export interface IAuthUserRepository {
-    findByUsernameOrEmpCode(username: string): Promise<User | null>;
+    findByUsernameOrEmpCode(username: string): Promise<any | null>;
     findByEmployeeCode(empCode: string): Promise<User | null>;
+    findByIdWithPermissions(userId: string): Promise<any | null>;
+    updateRefreshToken(userId: string, refreshToken: string | null): Promise<void>;
     updateLastLogin(userId: string): Promise<void>;
     createSyncedEmployee(data: {
         empCode: string;

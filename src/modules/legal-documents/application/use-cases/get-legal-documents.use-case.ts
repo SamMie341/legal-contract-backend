@@ -1,8 +1,8 @@
 import { Injectable, Inject, ForbiddenException } from '@nestjs/common';
-import { UserRole } from '@prisma/client';
 import { QueryLegalDocumentDto } from '../dto/query-legal-document.dto.js';
 import * as repoInterface from '../../domain/repositories/legal-document.repository.interface.js';
-import { isLegalDocumentDivision } from '../../../../core/utils/division-helper.util.js';
+import { canAccessModule } from '../../../../core/utils/division-helper.util.js';
+import { SystemModule } from '../../../../core/constants/division.constant.js';
 
 @Injectable()
 export class GetLegalDocumentsUseCase {
@@ -12,11 +12,7 @@ export class GetLegalDocumentsUseCase {
     ) { }
 
     async execute(query: QueryLegalDocumentDto, user: any) {
-        if (
-            user &&
-            user.role !== UserRole.ADMIN &&
-            (!isLegalDocumentDivision(user?.division) || user.canView === false)
-        ) {
+        if (user && !canAccessModule(user, SystemModule.LEGAL_DOCUMENTS, 'canView')) {
             throw new ForbiddenException('ທ່ານບໍ່ມີສິດເບິ່ງຂໍ້ມູນນິຕິກຳ');
         }
 

@@ -1,8 +1,8 @@
 import { Injectable, Inject, BadRequestException, ForbiddenException } from '@nestjs/common';
-import { UserRole } from '@prisma/client';
 import { CreateLegalDocumentDto } from '../dto/create-legal-document.dto.js';
 import * as repoInterface from '../../domain/repositories/legal-document.repository.interface.js';
-import { isLegalDocumentDivision } from '../../../../core/utils/division-helper.util.js';
+import { canAccessModule } from '../../../../core/utils/division-helper.util.js';
+import { SystemModule } from '../../../../core/constants/division.constant.js';
 
 @Injectable()
 export class CreateLegalDocumentUseCase {
@@ -14,11 +14,7 @@ export class CreateLegalDocumentUseCase {
     async execute(dto: CreateLegalDocumentDto, user: any) {
         const isObjectUser = typeof user === 'object' && user !== null;
         if (isObjectUser) {
-            const isLegalDiv = isLegalDocumentDivision(user.division);
-            const canUpload =
-                user.role === UserRole.ADMIN ||
-                (isLegalDiv && (user.role === UserRole.MAIN_USER || user.canUpload === true));
-            if (!canUpload) {
+            if (!canAccessModule(user, SystemModule.LEGAL_DOCUMENTS, 'canUpload')) {
                 throw new ForbiddenException('ທ່ານບໍ່ມີສິດສ້າງນິຕິກຳ');
             }
         }

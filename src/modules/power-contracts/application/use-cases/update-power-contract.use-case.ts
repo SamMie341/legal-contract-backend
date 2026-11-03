@@ -1,8 +1,8 @@
 import { Injectable, Inject, ForbiddenException } from '@nestjs/common';
 import { UpdatePowerContractDto } from '../dto/update-power-contract.dto.js';
 import * as powerContractRepositoryInterface from '../../domain/repositories/power-contract.repository.interface.js';
-import { UserRole } from '@prisma/client';
-import { isPowerContractDivision } from '../../../../core/utils/division-helper.util.js';
+import { canAccessModule } from '../../../../core/utils/division-helper.util.js';
+import { SystemModule } from '../../../../core/constants/division.constant.js';
 
 @Injectable()
 export class UpdatePowerContractUseCase {
@@ -12,14 +12,10 @@ export class UpdatePowerContractUseCase {
     ) { }
 
     async execute(id: string, dto: UpdatePowerContractDto, user: any) {
-        // 0. ກວດສອບສິດການແກ້ໄຂຂໍ້ມູນສັນຍາ (Admin, Main User ຫຼື ຜູ້ມີສິດ canEdit ຕາມ Division)
+        // 0. ກວດສອບສິດການແກ້ໄຂຂໍ້ມູນສັນຍາ
         const isObjectUser = typeof user === 'object' && user !== null;
         if (isObjectUser) {
-            const isPowerDiv = isPowerContractDivision(user.division);
-            const canEdit =
-                user.role === UserRole.ADMIN ||
-                (isPowerDiv && (user.role === UserRole.MAIN_USER || user.canEdit === true));
-            if (!canEdit) {
+            if (!canAccessModule(user, SystemModule.POWER_CONTRACTS, 'canEdit')) {
                 throw new ForbiddenException(
                     'ທ່ານບໍ່ມີສິດແກ້ໄຂຂໍ້ມູນສັນຍາຊື້-ຂາຍໄຟຟ້າ',
                 );

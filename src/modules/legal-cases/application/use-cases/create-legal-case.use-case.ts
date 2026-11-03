@@ -1,8 +1,8 @@
 import { Injectable, Inject, BadRequestException, ForbiddenException } from '@nestjs/common';
-import { UserRole } from '@prisma/client';
 import { CreateLegalCaseDto } from '../dto/create-legal-case.dto.js';
 import * as repoInterface from '../../domain/repositories/legal-case.repository.interface.js';
-import { isDisputeResolutionDivision } from '../../../../core/utils/division-helper.util.js';
+import { canAccessModule } from '../../../../core/utils/division-helper.util.js';
+import { SystemModule } from '../../../../core/constants/division.constant.js';
 
 @Injectable()
 export class CreateLegalCaseUseCase {
@@ -14,11 +14,7 @@ export class CreateLegalCaseUseCase {
     async execute(dto: CreateLegalCaseDto, user: any) {
         const isObjectUser = typeof user === 'object' && user !== null;
         if (isObjectUser) {
-            const isDisputeDiv = isDisputeResolutionDivision(user.division);
-            const canUpload =
-                user.role === UserRole.ADMIN ||
-                (isDisputeDiv && (user.role === UserRole.MAIN_USER || user.canUpload === true));
-            if (!canUpload) {
+            if (!canAccessModule(user, SystemModule.LEGAL_CASES, 'canUpload')) {
                 throw new ForbiddenException('ທ່ານບໍ່ມີສິດສ້າງບັນທຶກຄະດີ');
             }
         }
