@@ -1,4 +1,4 @@
-import { Controller, Get, Patch, Param, ParseUUIDPipe, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Param, ParseUUIDPipe, Query, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../../core/guards/jwt-auth.guard.js';
 import { RolesGuard } from '../../../core/guards/roles.guard.js';
@@ -8,6 +8,7 @@ import { SystemModule } from '../../../core/constants/division.constant.js';
 import { CurrentUser } from '../../../core/decorators/current-user.decorator.js';
 import { GetNotificationsUseCase } from '../application/use-cases/get-notifications.use-case.js';
 import { MarkNotificationReadUseCase } from '../application/use-cases/mark-notification-read.use-case.js';
+import { ContractExpiryCronService } from '../application/services/contract-expiry-cron.services.js';
 
 @ApiTags('Notifications')
 @ApiBearerAuth()
@@ -18,6 +19,7 @@ export class NotificationsController {
     constructor(
         private readonly getNotificationsUseCase: GetNotificationsUseCase,
         private readonly markReadUseCase: MarkNotificationReadUseCase,
+        private readonly cronService: ContractExpiryCronService,
     ) { }
 
     @ApiOperation({ summary: 'ດຶງການແຈ້ງເຕືອນ (ຄ່າເລີ່ມຕົ້ນສະແດງສະເພາະທີ່ຍັງບໍ່ທັນອ່ານ)' })
@@ -29,6 +31,15 @@ export class NotificationsController {
     ) {
         const isUnread = unreadOnly === undefined || unreadOnly === 'true';
         return this.getNotificationsUseCase.execute(user.userId, isUnread);
+    }
+
+    @ApiOperation({ summary: 'ກວດສອບສັນຍາໃກ້ໝົດອາຍຸ ແລະ ສ້າງແຈ້ງເຕືອນທັນທີ (Trigger Cron ສຳລັບທົດສອບ)' })
+    @Post('trigger-check')
+    async triggerCheck() {
+        await this.cronService.checkExpiringContracts();
+        return {
+            message: 'ກວດສອບສັນຍາໃກ້ໝົດອາຍຸ ແລະ ສ້າງແຈ້ງເຕືອນສຳເລັດ (Checked expiring contracts & generated notifications)',
+        };
     }
 
     @ApiOperation({ summary: 'ໝາຍການແຈ້ງເຕືອນທັງໝົດວ່າອ່ານແລ້ວ' })

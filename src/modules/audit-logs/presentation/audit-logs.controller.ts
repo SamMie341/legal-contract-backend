@@ -18,12 +18,23 @@ import { GetAuditLogsUseCase } from '../application/use-cases/get-audit-logs.use
 export class AuditLogsController {
     constructor(private readonly getAuditLogsUseCase: GetAuditLogsUseCase) { }
 
-    @ApiOperation({ summary: 'ດຶງປະຫວັດ Audit Logs ທັງໝົດ ພ້ອມ Filter ຕາມ Contract, User, Action' })
+    @ApiOperation({ summary: 'ສະຖິຕິພາບລວມ Audit Logs (ຈຳນວນລວມ, ຄວາມປອດໄພ, ສັນຍາ, ນິຕິກຳ, ໄຟລ໌)' })
+    @Get('stats')
+    async getStats() {
+        return this.getAuditLogsUseCase.getStats();
+    }
+
+    @ApiOperation({ summary: 'ດຶງປະຫວັດ Audit Logs ທັງໝົດ ພ້ອມ Filter ຕາມ Contract, User, Action, Search, Date Range' })
     @ApiQuery({ name: 'page', required: false, type: Number })
     @ApiQuery({ name: 'limit', required: false, type: Number })
+    @ApiQuery({ name: 'search', required: false, type: String })
     @ApiQuery({ name: 'contractId', required: false, type: String })
+    @ApiQuery({ name: 'powerContractId', required: false, type: String })
     @ApiQuery({ name: 'userId', required: false, type: String })
     @ApiQuery({ name: 'action', required: false, enum: AuditAction })
+    @ApiQuery({ name: 'category', required: false, type: String })
+    @ApiQuery({ name: 'startDate', required: false, type: String })
+    @ApiQuery({ name: 'endDate', required: false, type: String })
     @Get()
     async findAll(@Query() query: any) {
         return this.getAuditLogsUseCase.execute(query);

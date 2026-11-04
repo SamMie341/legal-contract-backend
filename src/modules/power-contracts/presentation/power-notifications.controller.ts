@@ -1,4 +1,4 @@
-import { Controller, Get, Patch, Param, ParseUUIDPipe, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Param, ParseUUIDPipe, Query, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../../core/guards/jwt-auth.guard.js';
 import { RolesGuard } from '../../../core/guards/roles.guard.js';
@@ -8,6 +8,7 @@ import { SystemModule } from '../../../core/constants/division.constant.js';
 import { CurrentUser } from '../../../core/decorators/current-user.decorator.js';
 import { GetPowerNotificationsUseCase } from '../application/use-cases/get-power-notifications.use-case.js';
 import { MarkPowerNotificationReadUseCase } from '../application/use-cases/mark-power-notification-read.use-case.js';
+import { PowerContractExpiryCronService } from '../application/services/power-contract-expiry-cron.service.js';
 
 @ApiTags('Power Notifications (ການແຈ້ງເຕືອນສັນຍາຊື້-ຂາຍໄຟຟ້າ - 60 ວັນ)')
 @ApiBearerAuth()
@@ -18,6 +19,7 @@ export class PowerNotificationsController {
     constructor(
         private readonly getNotificationsUseCase: GetPowerNotificationsUseCase,
         private readonly markReadUseCase: MarkPowerNotificationReadUseCase,
+        private readonly cronService: PowerContractExpiryCronService,
     ) { }
 
     @ApiOperation({ summary: 'ດຶງການແຈ້ງເຕືອນສັນຍາຊື້-ຂາຍໄຟຟ້າ (ຄ່າເລີ່ມຕົ້ນສະແດງສະເພາະທີ່ຍັງບໍ່ທັນອ່ານ)' })
@@ -29,6 +31,15 @@ export class PowerNotificationsController {
     ) {
         const isUnread = unreadOnly === undefined || unreadOnly === 'true';
         return this.getNotificationsUseCase.execute(user.userId, isUnread);
+    }
+
+    @ApiOperation({ summary: 'ກວດສອບສັນຍາໄຟຟ້າໃກ້ໝົດອາຍຸ ແລະ ສ້າງແຈ້ງເຕືອນທັນທີ (Trigger Cron ສຳລັບທົດສອບ)' })
+    @Post('trigger-check')
+    async triggerCheck() {
+        await this.cronService.checkExpiringContracts();
+        return {
+            message: 'ກວດສອບສັນຍາໄຟຟ້າໃກ້ໝົດອາຍຸ ແລະ ສ້າງແຈ້ງເຕືອນສຳເລັດ (Checked expiring power contracts & generated notifications)',
+        };
     }
 
     @ApiOperation({ summary: 'ໝາຍການແຈ້ງເຕືອນທັງໝົດວ່າອ່ານແລ້ວ' })

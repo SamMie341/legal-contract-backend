@@ -13,8 +13,12 @@ export class GetPowerNotificationsUseCase {
             ? await this.notificationRepo.getUnreadNotifications(userId)
             : await this.notificationRepo.getAllNotifications(userId);
 
+        const unreadList = await this.notificationRepo.getUnreadNotifications(userId);
+
         return {
             message: 'ດຶງລາຍການແຈ້ງເຕືອນສັນຍາຊື້-ຂາຍໄຟຟ້າສຳເລັດ',
+            unreadCount: unreadList.length,
+            total: data.length,
             data,
         };
     }

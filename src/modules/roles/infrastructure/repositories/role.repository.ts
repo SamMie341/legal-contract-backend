@@ -108,8 +108,8 @@ export class RoleRepository implements IRoleRepository {
                     data: {
                         userId,
                         action: AuditAction.CREATE_ROLE,
-                        details: `ສ້າງບົດບາດໃໝ່: ${role.name} (${role.title})`,
                         newValues: {
+                            details: `ສ້າງບົດບາດໃໝ່: ${role.name} (${role.title})`,
                             roleId: role.id,
                             name: role.name,
                             title: role.title,
@@ -202,7 +202,6 @@ export class RoleRepository implements IRoleRepository {
                     data: {
                         userId,
                         action: AuditAction.UPDATE_ROLE,
-                        details: `ແກ້ໄຂບົດບາດ: ${updated.name}`,
                         oldValues: {
                             name: existing.name,
                             title: existing.title,
@@ -210,6 +209,7 @@ export class RoleRepository implements IRoleRepository {
                             permissions: existing.permissions,
                         },
                         newValues: {
+                            details: `ແກ້ໄຂບົດບາດ: ${updated.name}`,
                             name: updated.name,
                             title: updated.title,
                             description: updated.description,
@@ -264,8 +264,8 @@ export class RoleRepository implements IRoleRepository {
                     data: {
                         userId,
                         action: AuditAction.DELETE_ROLE,
-                        details: `ລົບບົດບາດ: ${existing.name} (${existing.title})`,
                         oldValues: {
+                            details: `ລົບບົດບາດ: ${existing.name} (${existing.title})`,
                             roleId: existing.id,
                             name: existing.name,
                             title: existing.title,

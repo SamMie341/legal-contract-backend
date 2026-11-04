@@ -212,9 +212,10 @@ graph TD
   - `status`: `DRAFT`, `ACTIVE`, `EXPIRING_SOON`, `EXPIRED`, `TERMINATED`
 
 ### 3.3 แจ้งเตือนสัญญาใกล้หมดอายุ 60 วัน (`/api/notifications`)
-- `GET /api/notifications?unreadOnly=true`
+- `GET /api/notifications?unreadOnly=true` (คืน `unreadCount`, `total`, `data`)
 - `PATCH /api/notifications/:id/read`
 - `PATCH /api/notifications/read-all`
+- `POST /api/notifications/trigger-check` (Trigger สแกนสัญญาใกล้หมดอายุและสร้างแจ้งเตือนทันที สำหรับทดสอบไม่ต้องรอเที่ยงคืน)
 
 ---
 
@@ -270,9 +271,10 @@ graph TD
 ```
 
 ### 4.3 แจ้งเตือนสัญญาไฟฟ้าใกล้หมดอายุ (`/api/power-notifications`)
-- `GET /api/power-notifications?unreadOnly=true`
+- `GET /api/power-notifications?unreadOnly=true` (คืน `unreadCount`, `total`, `data`)
 - `PATCH /api/power-notifications/:id/read`
 - `PATCH /api/power-notifications/read-all`
+- `POST /api/power-notifications/trigger-check` (Trigger สแกนสัญญาไฟฟ้าใกล้หมดอายุและสร้างแจ้งเตือนทันที สำหรับทดสอบไม่ต้องรอเที่ยงคืน)
 
 ---
 

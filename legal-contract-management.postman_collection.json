@@ -972,6 +972,25 @@
               ]
             }
           }
+        },
+        {
+          "name": "Trigger Contract Expiry Check (POST /notifications/trigger-check)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/notifications/trigger-check",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "notifications",
+                "trigger-check"
+              ]
+            },
+            "description": "ສັ່ງໃຫ້ລະບົບກວດສອບສັນຍາໃກ້ໝົດອາຍຸ ແລະ ສ້າງ Notification ທັນທີ (ສຳລັບທົດສອບ ບໍ່ຕ້ອງລໍຖ້າຮອດທ່ຽງຄືນ)"
+          },
+          "response": []
         }
       ]
     },
@@ -1979,6 +1998,25 @@
               ]
             }
           }
+        },
+        {
+          "name": "Trigger Power Expiry Check (POST /power-notifications/trigger-check)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/power-notifications/trigger-check",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "power-notifications",
+                "trigger-check"
+              ]
+            },
+            "description": "ສັ່ງໃຫ້ລະບົບກວດສອບສັນຍາໄຟຟ້າໃກ້ໝົດອາຍຸ ແລະ ສ້າງ Power Notification ທັນທີ (ສຳລັບທົດສອບ ບໍ່ຕ້ອງລໍຖ້າຮອດທ່ຽງຄືນ)"
+          },
+          "response": []
         }
       ]
     },
