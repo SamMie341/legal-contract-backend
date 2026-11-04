@@ -37,7 +37,7 @@ export class PowerContractExpiryCronService {
                 for (const contract of expiringContracts) {
                     const today = new Date();
                     const expireDate = new Date(contract.expirationDate!);
-                    const daysDiff = Math.ceil((expireDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+                    const daysDiff = Math.max(0, Math.ceil((expireDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)));
 
                     await this.powerContractRepository.markContractAsExpiringAndNotify(contract.id, daysDiff);
                     this.logger.log(`ສ້າງແຈ້ງເຕືອນສຳລັບສັນຍາຊື້-ຂາຍໄຟຟ້າ ID: ${contract.id} (${daysDiff} ວັນ) ສຳເລັດ.`);

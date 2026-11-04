@@ -103,6 +103,44 @@ export class PowerContractRepository implements IPowerContractRepository {
                 },
             });
 
+            // ຫາກສັນຍາຖືກສ້າງຂຶ້ນມາໃນສະຖານະໃກ້ໝົດອາຍຸ ຫຼື ໝົດອາຍຸແລ້ວ ໃຫ້ສ້າງແຈ້ງເຕືອນທັນທີ
+            if (initialStatus === ContractStatus.EXPIRING_SOON && dto.expirationDate) {
+                const now = new Date();
+                const expireDate = new Date(dto.expirationDate);
+                const daysDiff = Math.max(0, Math.ceil((expireDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)));
+                await tx.powerContract.update({
+                    where: { id: newContract.id },
+                    data: {
+                        isExpiryNotified: true,
+                        lastNotifiedAt: now,
+                    },
+                });
+                await tx.powerContractNotification.create({
+                    data: {
+                        powerContractId: newContract.id,
+                        title: 'ແຈ້ງເຕືອນ: ສັນຍາຊື້-ຂາຍໄຟຟ້າໃກ້ຈະສິ້ນສຸດ',
+                        message: `ສັນຍາ "${newContract.projectName}" (${newContract.contractType === 'PURCHASE' ? 'ສັນຍາຊື້ໄຟຟ້າ' : 'ສັນຍາຂາຍໄຟຟ້າ'}) ຈະສິ້ນສຸດໃນອີກ ${daysDiff} ວັນ.`,
+                        daysRemaining: daysDiff,
+                    },
+                });
+            } else if (initialStatus === ContractStatus.EXPIRED) {
+                await tx.powerContract.update({
+                    where: { id: newContract.id },
+                    data: {
+                        isExpiryNotified: true,
+                        lastNotifiedAt: new Date(),
+                    },
+                });
+                await tx.powerContractNotification.create({
+                    data: {
+                        powerContractId: newContract.id,
+                        title: 'ແຈ້ງເຕືອນ: ສັນຍາຊື້-ຂາຍໄຟຟ້າໝົດອາຍຸແລ້ວ',
+                        message: `ສັນຍາ "${newContract.projectName}" ໄດ້ສິ້ນສຸດອາຍຸສັນຍາແລ້ວ.`,
+                        daysRemaining: 0,
+                    },
+                });
+            }
+
             return newContract;
         });
     }
@@ -308,12 +346,14 @@ export class PowerContractRepository implements IPowerContractRepository {
 
     async findContractsExpiringSoon(days: number): Promise<PowerContract[]> {
         const today = new Date();
-        const targetDate = new Date();
+        today.setHours(0, 0, 0, 0);
+        const targetDate = new Date(today);
         targetDate.setDate(today.getDate() + days);
+        targetDate.setHours(23, 59, 59, 999);
 
         return this.prisma.powerContract.findMany({
             where: {
-                status: ContractStatus.ACTIVE,
+                status: { in: [ContractStatus.ACTIVE, ContractStatus.EXPIRING_SOON] },
                 deletedAt: null,
                 isExpiryNotified: false,
                 expirationDate: {
@@ -355,8 +395,9 @@ export class PowerContractRepository implements IPowerContractRepository {
 
         return this.prisma.powerContract.findMany({
             where: {
-                status: { in: [ContractStatus.ACTIVE, ContractStatus.EXPIRING_SOON] },
+                status: { in: [ContractStatus.ACTIVE, ContractStatus.EXPIRING_SOON, ContractStatus.EXPIRED] },
                 deletedAt: null,
+                isExpiryNotified: false,
                 expirationDate: {
                     lt: today,
                     not: null,
@@ -371,6 +412,7 @@ export class PowerContractRepository implements IPowerContractRepository {
                 where: { id: contractId },
                 data: {
                     status: ContractStatus.EXPIRED,
+                    isExpiryNotified: true,
                     lastNotifiedAt: new Date(),
                 },
             });

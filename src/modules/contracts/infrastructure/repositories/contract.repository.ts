@@ -93,6 +93,44 @@ export class ContractRepository implements IContractRepository {
                 },
             });
 
+            // ຫາກສັນຍາຖືກສ້າງຂຶ້ນມາໃນສະຖານະໃກ້ໝົດອາຍຸ ຫຼື ໝົດອາຍຸແລ້ວ ໃຫ້ສ້າງແຈ້ງເຕືອນທັນທີ
+            if (initialStatus === ContractStatus.EXPIRING_SOON && dto.expirationDate) {
+                const now = new Date();
+                const expireDate = new Date(dto.expirationDate);
+                const daysDiff = Math.max(0, Math.ceil((expireDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)));
+                await tx.contract.update({
+                    where: { id: newContract.id },
+                    data: {
+                        isExpiryNotified: true,
+                        lastNotifiedAt: now,
+                    },
+                });
+                await tx.contractNotification.create({
+                    data: {
+                        contractId: newContract.id,
+                        title: 'ແຈ້ງເຕືອນ: ສັນຍາໃກ້ຈະສິ້ນສຸດ',
+                        message: `ສັນຍາ "${newContract.title}" (ເລກທີ: ${newContract.contractNumber}) ຈະສິ້ນສຸດໃນອີກ ${daysDiff} ວັນ.`,
+                        daysRemaining: daysDiff,
+                    },
+                });
+            } else if (initialStatus === ContractStatus.EXPIRED) {
+                await tx.contract.update({
+                    where: { id: newContract.id },
+                    data: {
+                        isExpiryNotified: true,
+                        lastNotifiedAt: new Date(),
+                    },
+                });
+                await tx.contractNotification.create({
+                    data: {
+                        contractId: newContract.id,
+                        title: 'ແຈ້ງເຕືອນ: ສັນຍາໝົດອາຍຸແລ້ວ',
+                        message: `ສັນຍາ "${newContract.title}" (ເລກທີ: ${newContract.contractNumber}) ໄດ້ສິ້ນສຸດອາຍຸສັນຍາແລ້ວ.`,
+                        daysRemaining: 0,
+                    },
+                });
+            }
+
             return newContract;
         });
     }
@@ -288,12 +326,14 @@ export class ContractRepository implements IContractRepository {
 
     async findContractsExpiringSoon(days: number): Promise<Contract[]> {
         const today = new Date();
-        const targetDate = new Date();
+        today.setHours(0, 0, 0, 0);
+        const targetDate = new Date(today);
         targetDate.setDate(today.getDate() + days);
+        targetDate.setHours(23, 59, 59, 999);
 
         return this.prisma.contract.findMany({
             where: {
-                status: ContractStatus.ACTIVE,
+                status: { in: [ContractStatus.ACTIVE, ContractStatus.EXPIRING_SOON] },
                 deletedAt: null,
                 isExpiryNotified: false,
                 expirationDate: {
@@ -335,8 +375,9 @@ export class ContractRepository implements IContractRepository {
 
         return this.prisma.contract.findMany({
             where: {
-                status: { in: [ContractStatus.ACTIVE, ContractStatus.EXPIRING_SOON] },
+                status: { in: [ContractStatus.ACTIVE, ContractStatus.EXPIRING_SOON, ContractStatus.EXPIRED] },
                 deletedAt: null,
+                isExpiryNotified: false,
                 expirationDate: {
                     lt: today,
                     not: null,
@@ -351,6 +392,7 @@ export class ContractRepository implements IContractRepository {
                 where: { id: contractId },
                 data: {
                     status: ContractStatus.EXPIRED,
+                    isExpiryNotified: true,
                     lastNotifiedAt: new Date(),
                 },
             });
