@@ -197,7 +197,8 @@
                 "auth",
                 "me"
               ]
-            }
+            },
+            "description": "ດຶງຂໍ້ມູນ Profile ສົດຈາກຖານຂໍ້ມູນ ພ້ອມສິດລະອຽດ (accessibleModules, permissionsByModule, modulePermissions, role, roleTitle)"
           }
         },
         {
@@ -922,7 +923,7 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/notifications?unreadOnly=true",
+              "raw": "{{baseUrl}}/notifications?unreadOnly=false",
               "host": [
                 "{{baseUrl}}"
               ],
@@ -932,10 +933,12 @@
               "query": [
                 {
                   "key": "unreadOnly",
-                  "value": "true"
+                  "value": "false",
+                  "description": "false = ສະແດງທັງໝົດ (All Notifications), true = ສະແດງສະເພາະທີ່ຍັງບໍ່ທັນອ່ານ (Unread Only)"
                 }
               ]
-            }
+            },
+            "description": "ດຶງລາຍການແຈ້ງເຕືອນສັນຍາທົ່ວໄປ (Response: { message, unreadCount, total, data: [...] })"
           }
         },
         {
@@ -1948,7 +1951,7 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/power-notifications?unreadOnly=true",
+              "raw": "{{baseUrl}}/power-notifications?unreadOnly=false",
               "host": [
                 "{{baseUrl}}"
               ],
@@ -1958,10 +1961,12 @@
               "query": [
                 {
                   "key": "unreadOnly",
-                  "value": "true"
+                  "value": "false",
+                  "description": "false = ສະແດງທັງໝົດ (All Notifications), true = ສະແດງສະເພາະທີ່ຍັງບໍ່ທັນອ່ານ (Unread Only)"
                 }
               ]
-            }
+            },
+            "description": "ດຶງລາຍການແຈ້ງເຕືອນສັນຍາຊື້-ຂາຍໄຟຟ້າ (Response: { message, unreadCount, total, data: [...] })"
           }
         },
         {
@@ -2568,12 +2573,30 @@
       "name": "13. Audit Logs (ປະຫວັດການດຳເນີນງານ)",
       "item": [
         {
+          "name": "Get Audit Logs Stats (GET /audit-logs/stats)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/audit-logs/stats",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "audit-logs",
+                "stats"
+              ]
+            },
+            "description": "ສະຖິຕິພາບລວມ Audit Logs (ຈຳນວນລວມ, ຄວາມປອດໄພ, ສັນຍາ, ນິຕິກຳ, ໄຟລ໌)"
+          }
+        },
+        {
           "name": "Get Audit Logs (GET /audit-logs)",
           "request": {
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/audit-logs?page=1&limit=20&action=CREATE_CONTRACT",
+              "raw": "{{baseUrl}}/audit-logs?page=1&limit=20",
               "host": [
                 "{{baseUrl}}"
               ],
@@ -2583,18 +2606,65 @@
               "query": [
                 {
                   "key": "page",
-                  "value": "1"
+                  "value": "1",
+                  "description": "ໜ້າທີ່"
                 },
                 {
                   "key": "limit",
-                  "value": "20"
+                  "value": "20",
+                  "description": "ຈຳນວນຕໍ່ໜ້າ"
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "disabled": true,
+                  "description": "ຄົ້ນຫາຂໍ້ຄວາມ"
                 },
                 {
                   "key": "action",
-                  "value": "CREATE_CONTRACT"
+                  "value": "CREATE_CONTRACT",
+                  "disabled": true,
+                  "description": "CREATE_CONTRACT, UPDATE_ROLE, etc."
+                },
+                {
+                  "key": "category",
+                  "value": "CONTRACT",
+                  "disabled": true,
+                  "description": "CONTRACT, POWER_CONTRACT, LEGAL, USER, ROLE, SECURITY"
+                },
+                {
+                  "key": "contractId",
+                  "value": "{{contractId}}",
+                  "disabled": true,
+                  "description": "Filter ຕາມ Contract UUID"
+                },
+                {
+                  "key": "powerContractId",
+                  "value": "{{powerContractId}}",
+                  "disabled": true,
+                  "description": "Filter ຕາມ Power Contract UUID"
+                },
+                {
+                  "key": "userId",
+                  "value": "{{userId}}",
+                  "disabled": true,
+                  "description": "Filter ຕາມ User UUID"
+                },
+                {
+                  "key": "startDate",
+                  "value": "2026-01-01",
+                  "disabled": true,
+                  "description": "ວັນທີເລີ່ມຕົ້ນ (YYYY-MM-DD)"
+                },
+                {
+                  "key": "endDate",
+                  "value": "2026-12-31",
+                  "disabled": true,
+                  "description": "ວັນທີສິ້ນສຸດ (YYYY-MM-DD)"
                 }
               ]
-            }
+            },
+            "description": "ດຶງລາຍການ Audit Logs ພ້ອມ Filter ຕາມ Contract, User, Action, Category, Date Range"
           }
         }
       ]

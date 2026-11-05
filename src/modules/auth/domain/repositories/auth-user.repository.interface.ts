@@ -19,7 +19,7 @@ export interface IAuthUserRepository {
         phone?: string;
         passwordHash: string;
         role: UserRole;
-    }): Promise<User>;
+    }): Promise<any>;
     upsertHrmUser(data: {
         empCode: string;
         email: string;
@@ -30,5 +30,5 @@ export interface IAuthUserRepository {
         position: string;
         phone: string;
         passwordHash: string;
-    }): Promise<User>;
+    }): Promise<any>;
 }

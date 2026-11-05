@@ -86,10 +86,18 @@ export class AuthUserRepository implements IAuthUserRepository {
                 phone: data.phone,
                 role: data.role,
             },
+            include: {
+                modulePermissions: true,
+                roleRef: {
+                    include: {
+                        permissions: true,
+                    },
+                },
+            },
         });
     }
 
-    async upsertHrmUser(data: any): Promise<User> {
+    async upsertHrmUser(data: any): Promise<any> {
         return this.prisma.user.upsert({
             where: { employeeCode: data.empCode },
             update: {
@@ -115,6 +123,14 @@ export class AuthUserRepository implements IAuthUserRepository {
                 position: data.position,
                 phone: data.phone,
                 role: UserRole.VIEWER,
+            },
+            include: {
+                modulePermissions: true,
+                roleRef: {
+                    include: {
+                        permissions: true,
+                    },
+                },
             },
         });
     }

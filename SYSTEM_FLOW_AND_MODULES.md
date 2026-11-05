@@ -1,7 +1,7 @@
 # ລະບົບຄຸ້ມຄອງສັນຍາ, ນິຕິກຳ ແລະ ຄະດີຄວາມ ໄຟຟ້າລາວ (EDL)
 ## System Architecture, Workflows & Module Specification
-**Version:** 2.0 (Dynamic Custom Roles, 3 Core Pillars RBAC & Stateless Token Versioning)  
-**ວັນທີປັບປຸງ:** 03/11/2026  
+**Version:** 2.1 (Full Dynamic RBAC, Power Contracts, Audit Logs & Instant Expiry Notifications)  
+**ວັນທີປັບປຸງ:** 05/11/2026  
 **ສະຖານະລະບົບ:** Production Ready (Clean Architecture 4 Layers + Prisma ORM 7 + NestJS ESM)
 
 ---
@@ -31,7 +31,8 @@ graph TD
 
 1. **ພະແນກສັນຍາທົ່ວໄປ (General Contracts Division - `CONTRACTS`)**: 
    - ຕິດຕາມສັນຍາ 14 ປະເພດ (O&M, EPC, ເຊົ່າດິນ, MOA, PTA, ແລະອື່ນໆ).
-   - ແຈ້ງເຕືອນສັນຍາໃກ້ໝົດອາຍຸອັດຕະໂນມັດ (Automated Cron Job ທຸກທ່ຽງຄືນ &le; 60 ວັນ).
+   - ແຈ້ງເຕືອນສັນຍາໃກ້ໝົດອາຍຸອັດຕະໂນມັດ (Automated Cron Job ທຸກທ່ຽງຄືນ 00:05 &le; 60 ວັນ).
+   - ສ້າງແຈ້ງເຕືອນທັນທີເມື່ອສ້າງສັນຍາໃໝ່ທີ່ມີວັນໝົດອາຍຸ &le; 60 ວັນ ຫຼື ໝົດອາຍຸແລ້ວ.
    - ຄຸ້ມຄອງມູນຄ່າສັນຍາ 3 ສະກຸນເງິນ (LAK, USD, CNY).
    - ຈັດເກັບ ແລະ ຈັດການໄຟລ໌ແນບສັນຍາ (Upload, Preview Inline, Download, Delete).
    - Dashboard ສະຖິຕິສັນຍາ, ກຣາບສະຖານະ, ສະກຸນເງິນ ແລະ ມູນຄ່າລວມ.
@@ -40,7 +41,7 @@ graph TD
    - ຈັດການສັນຍາຊື້ໄຟຟ້າ (PPA) ແລະ ສັນຍາຂາຍໄຟຟ້າ (PSA).
    - ຮອງຮັບ 5 ປະເພດໂຄງການໄຟຟ້າ (ໄຟຟ້ານໍ້າຕົກ, ແສງຕາເວັນ, ລົມ, ຄວາມຮ້ອນ/ຖ່ານຫີນ, ຊີວະມວນ).
    - ຕິດຕາມກຳລັງການຕິດຕັ້ງ (Installed Capacity: MW/kW), ອັດຕາຄ່າໄຟຟ້າ (Tariff).
-   - ແຈ້ງເຕືອນສັນຍາໄຟຟ້າໃກ້ໝົດອາຍຸອັດຕະໂນມັດ (&le; 60 ວັນ).
+   - ແຈ້ງເຕືອນສັນຍາໄຟຟ້າໃກ້ໝົດອາຍຸອັດຕະໂນມັດ (Cron Job ທຸກທ່ຽງຄືນ 00:08 &le; 60 ວັນ) ແລະ ສ້າງແຈ້ງເຕືອນທັນທີຕອນສ້າງສັນຍາ.
    - Dashboard ສະຖິຕິສັນຍາໄຟຟ້າ, ກຳລັງຕິດຕັ້ງລວມ ແລະ ສະຖານະໂຄງການ.
 
 3. **ພະແນກນິຕິກຳ ແລະ ແກ້ໄຂຂໍ້ຂັດແຍ່ງ (Legal Affairs & Dispute Resolution Division - `LEGAL_AND_DISPUTE`)**:
@@ -103,7 +104,7 @@ graph TD
 
     subgraph InfraLayer["4. Infrastructure & External Services"]
         HRM_API["EDL HRM API (https://api-test.edl.com.la/hrm/api) [ພ້ອມ Fallback]"]
-        CronService["Cron Scheduler (ທຸກທ່ຽງຄືນ 00:00: ກວດສອບສັນຍາທົ່ວໄປ & ສັນຍາໄຟຟ້າ)"]
+        CronService["Cron Scheduler (00:05 ສັນຍາທົ່ວໄປ, 00:08 ສັນຍາໄຟຟ້າ) + Manual Trigger APIs"]
         StorageEngine["Disk Storage Engine (/uploads/contracts, /power, /docs, /cases, /tickets)"]
         PostgresDB[("PostgreSQL Database (Prisma ORM 7 + Stateless token_version)")]
         TokenCache["In-Memory TokenVersion Cache (Nano-second Fast Lookup)"]
@@ -137,17 +138,17 @@ graph TD
 
 | # | ຊື່ໂມດູນ | ເສັ້ນທາງໂຟລເດີ | ສິດໂມດູນ / ພະແນກ | ຕາຕະລາງ DB | ໜ້າທີ່ຫຼັກ ແລະ API Endpoints ສຳຄັນ |
 | :- | :--- | :--- | :--- | :--- | :--- |
-| **01** | `AuthModule` | `src/modules/auth` | Common (ທຸກຄົນ) | `users` | - Login ຜ່ານ HRM ຫຼື Local User (`POST /api/auth/login`)<br/>- ອອກ Pure Stateless JWT (`accessToken` + `refreshToken`) ບັນຈຸ `permissionsByModule`<br/>- Instant Invalidation ຜ່ານ `tokenVersion`<br/>- ຕໍ່ອາຍຸ Token ແບບ Seamless (`POST /api/auth/refresh`)<br/>- ດຶງຂໍ້ມູນ Profile & Permissions (`GET /api/auth/me`) |
-| **02** | `RolesModule` | `src/modules/roles` | Admin Only | `roles`, `role_module_permissions` | - ຄຸ້ມຄອງບົດບາດແບບ Dynamic RBAC (`/api/roles`)<br/>- ສ້າງ, ແກ້ໄຂ, ລົບ Custom Role ພ້ອມກຳນົດສິດ Matrix ລາຍໂມດູນ<br/>- ລະບົບປ້ອງກັນ System Roles ບໍ່ໃຫ້ລົບ/ແກ້ໄຂຜິດພາດ<br/>- ອັດຕະໂນມັດ Invalidate Session ຂອງ User ທຸກຄົນທີ່ຖື Role ເມື່ອ Role ຖືກແກ້ໄຂ |
+| **01** | `AuthModule` | `src/modules/auth` | Common (ທຸກຄົນ) | `users` | - Login ຜ່ານ HRM ຫຼື Local User (`POST /api/auth/login`)<br/>- ອອກ Pure Stateless JWT (`accessToken` + `refreshToken`) ບັນຈຸ `permissionsByModule`<br/>- Instant Invalidation ຜ່ານ `tokenVersion`<br/>- ຕໍ່ອາຍຸ Token ແບບ Seamless (`POST /api/auth/refresh`)<br/>- ດຶງຂໍ້ມູນ Profile & Permissions ສົດຈາກຖານຂໍ້ມູນ (`GET /api/auth/me`) |
+| **02** | `RolesModule` | `src/modules/roles` | Admin Only | `roles`, `role_module_permissions` | - ຄຸ້ມຄອງບົດບາດແບບ Dynamic RBAC (`/api/roles`)<br/>- ສ້າງ, ແກ້ໄຂ, ລົບ Custom Role ພ້ອມກຳນົດສິດ Matrix ລາຍໂມດູນ<br/>- ລະບົບປ້ອງກັນ System Roles ບໍ່ໃຫ້ລົບ/ແກ້ໄຂຜິດພາດ<br/>- ບັນທຶກ AuditLog: `CREATE_ROLE`, `UPDATE_ROLE`, `DELETE_ROLE`<br/>- ອັດຕະໂນມັດ Invalidate Session ຂອງ User ທຸກຄົນທີ່ຖື Role ເມື່ອ Role ຖືກແກ້ໄຂ |
 | **03** | `UsersModule` | `src/modules/users` | Admin Only | `users`, `user_module_permissions` | - ຄົ້ນຫາຂໍ້ມູນພະນັກງານ HRM ແບບ Auto-fill (`GET /api/users/hrm/:empCode`)<br/>- ສ້າງ/ແກ້ໄຂຜູ້ໃຊ້ ຜູກກັບ Role (`roleId`) ຫຼື ກຳນົດ Custom Module Permissions<br/>- HRM Sync ພ້ອມ Fallback Mechanism ຫາກ HRM Offline<br/>- ອັດຕະໂນມັດ Invalidate Session ຂອງ User ທັນທີເມື່ອສິດຖືກປ່ຽນ |
 | **04** | `DepartmentsModule` | `src/modules/departments` | Common (ທຸກຄົນ) | `departments` | - Sync ຫ້ອງການ/ຝ່າຍຈາກ HRM ອັດຕະໂນມັດ (`POST /api/departments/sync`)<br/>- Dropdown ລາຍຊື່ຝ່າຍສຳລັບ Form ທຸກໂມດູນ (`GET /api/departments/dropdown`)<br/>- CRUD ຫ້ອງການ/ຝ່າຍ ພ້ອມລະບົບປ້ອງກັນການລົບຫາກມີຂໍ້ມູນຜູກມັດ |
 | **05** | `ContractTypesModule` | `src/modules/contract-types` | `CONTRACTS` / ADMIN | `contract_types` | - ຄຸ້ມຄອງ 14 ປະເພດສັນຍາຫຼັກ (O&M, EPC, ເຊົ່າດິນ, MOA, PTA, ແລະອື່ນໆ)<br/>- Dropdown ປະເພດສັນຍາ (`GET /api/contract-types/dropdown`) |
-| **06** | `ContractsModule` | `src/modules/contracts` | `CONTRACTS` / ADMIN | `contracts`, `contract_attachments`, `notifications` | - ຄຸ້ມຄອງສັນຍາທົ່ວໄປ (DRAFT, ACTIVE, EXPIRING_SOON, EXPIRED, TERMINATED)<br/>- ຮອງຮັບ 3 ສະກຸນເງິນ: LAK, USD, CNY<br/>- Cron Service ກວດສອບສັນຍາໝົດອາຍຸທຸກທ່ຽງຄືນ ແລະ ແຈ້ງເຕືອນລ່ວງໜ້າ (&le; 60 ວັນ)<br/>- ໄຟລ໌ແນບ (Upload, Preview Inline, Download, Delete)<br/>- Dashboard ສະຖິຕິສັນຍາ (`GET /api/contracts/dashboard`) |
-| **07** | `PowerContractsModule` | `src/modules/power-contracts` | `POWER_CONTRACTS` / ADMIN | `power_contracts`, `power_contract_attachments`, `power_notifications` | - ຄຸ້ມຄອງສັນຍາຊື້ໄຟຟ້າ (PPA) ແລະ ຂາຍໄຟຟ້າ (PSA)<br/>- 5 ປະເພດໂຄງການໄຟຟ້າ (`GET /api/power-contracts/project-types`) ສຳລັບ PPA<br/>- ຕິດຕາມກຳລັງຕິດຕັ້ງ (Installed Capacity: MW) ແລະ ອັດຕາຄ່າໄຟຟ້າ (Tariff)<br/>- Cron Service ແຈ້ງເຕືອນສັນຍາໄຟຟ້າໃກ້ໝົດອາຍຸ (&le; 60 ວັນ)<br/>- ໄຟລ໌ແນບ (Upload, Preview, Download, Delete)<br/>- Dashboard ສັນຍາຊື້-ຂາຍໄຟຟ້າ (`GET /api/power-contracts/dashboard`) |
+| **06** | `ContractsModule` | `src/modules/contracts` | `CONTRACTS` / ADMIN | `contracts`, `contract_attachments`, `notifications` | - ຄຸ້ມຄອງສັນຍາທົ່ວໄປ (DRAFT, ACTIVE, EXPIRING_SOON, EXPIRED, TERMINATED)<br/>- ຮອງຮັບ 3 ສະກຸນເງິນ: LAK, USD, CNY<br/>- ສ້າງແຈ້ງເຕືອນທັນທີເມື່ອສ້າງສັນຍາໃໝ່ທີ່ມີອາຍຸ &le; 60 ວັນ ຫຼື ໝົດອາຍຸແລ້ວ<br/>- Cron Service (00:05) ກວດສອບສັນຍາໃກ້ໝົດອາຍຸ ແລະ ໝົດອາຍຸແລ້ວ<br/>- Manual Trigger Check API (`POST /api/notifications/trigger-check`)<br/>- ດຶງແຈ້ງເຕືອນ (`GET /api/notifications?unreadOnly=false`) ຄືນ `{ message, unreadCount, total, data }`<br/>- ໄຟລ໌ແນບ (Upload, Preview Inline, Download, Delete)<br/>- Dashboard ສະຖິຕິສັນຍາ (`GET /api/contracts/dashboard`) |
+| **07** | `PowerContractsModule` | `src/modules/power-contracts` | `POWER_CONTRACTS` / ADMIN | `power_contracts`, `power_contract_attachments`, `power_notifications` | - ຄຸ້ມຄອງສັນຍາຊື້ໄຟຟ້າ (PPA) ແລະ ຂາຍໄຟຟ້າ (PSA)<br/>- 5 ປະເພດໂຄງການໄຟຟ້າ (`GET /api/power-contracts/project-types`) ສຳລັບ PPA<br/>- ຕິດຕາມກຳລັງຕິດຕັ້ງ (Installed Capacity: MW) ແລະ ອັດຕາຄ່າໄຟຟ້າ (Tariff)<br/>- ສ້າງແຈ້ງເຕືອນທັນທີເມື່ອສ້າງສັນຍາໃໝ່ທີ່ມີອາຍຸ &le; 60 ວັນ ຫຼື ໝົດອາຍຸແລ້ວ<br/>- Cron Service (00:08) ແຈ້ງເຕືອນສັນຍາໄຟຟ້າໃກ້ໝົດອາຍຸ (&le; 60 ວັນ)<br/>- Manual Trigger Check API (`POST /api/power-notifications/trigger-check`)<br/>- ດຶງແຈ້ງເຕືອນ (`GET /api/power-notifications?unreadOnly=false`) ຄືນ `{ message, unreadCount, total, data }`<br/>- ໄຟລ໌ແນບ (Upload, Preview, Download, Delete)<br/>- Dashboard ສັນຍາຊື້-ຂາຍໄຟຟ້າ (`GET /api/power-contracts/dashboard`) |
 | **08** | `LegalDocumentsModule` | `src/modules/legal-documents` | `LEGAL_AND_DISPUTE` / ADMIN | `legal_documents`, `document_attachments` | - ຄຸ້ມຄອງນິຕິກຳ (ລະບຽບການ, ຂໍ້ກຳນົດ, ແຈ້ງການ, ສັນຍາ, ຄູ່ມື, ອື່ນໆ)<br/>- ສະຖານະນິຕິກຳ (ACTIVE / INACTIVE), ປີອອກ, ເລກທີ, ຝ່າຍທີ່ຮັບຜິດຊອບ<br/>- ໄຟລ໌ແນບນິຕິກຳ (Upload, Preview Inline, Download, Soft Delete)<br/>- Dashboard ນິຕິກຳ (`GET /api/legal-documents/dashboard`) |
 | **09** | `LegalCasesModule` | `src/modules/legal-cases` | `LEGAL_AND_DISPUTE` / ADMIN | `legal_cases`, `case_attachments` | - ຄຸ້ມຄອງຄະດີ ແລະ ຂໍ້ຂັດແຍ່ງ (ການຄ້າ, ແພ່ງ, ອາຍາ, ບໍລິຫານ)<br/>- ສະຖານະຂັ້ນສານ 3 ຂັ້ນ: ສານຂັ້ນຕົ້ນ, ອຸທອນ, ລົບລ້າງ, ຈົບຄະດີ, ສຳເລັດ<br/>- ການເງິນແຍກ 2 ສະກຸນ (LAK & USD): ຄວາມເສຍຫາຍ, ຄ່າປັບໃໝ, ລວມຍອດຕ້ອງຊຳລະ (Auto-calc), ຍອດກູ້ຄືນໄດ້<br/>- ໄຟລ໌ສຳນວນຄະດີ (Upload, Preview, Download, Soft Delete)<br/>- Dashboard ຄະດີຄວາມ (`GET /api/legal-cases/dashboard`) |
 | **10** | `SupportModule` | `src/modules/support` | Common (ທຸກຄົນ) | `system_contact_channels`, `support_tickets` | - ຊ່ອງທາງຕິດຕໍ່ IT Support, ສາຍດ່ວນ, WhatsApp<br/>- ລະບົບແຈ້ງບັນຫາ/ຂໍປັບປຸງລະບົບ (Open, In Progress, Resolved, Closed) |
-| **11** | `AuditLogsModule` | `src/modules/audit-logs` | Admin Only | `audit_logs` | - ບັນທຶກປະຫວັດການດຳເນີນງານທັງໝົດໃນລະບົບ (Create, Update, Delete, Upload, Download)<br/>- ເກັບ Old Values ແລະ New Values ແບບ JSONB ພ້ອມ IP Address ແລະ User ID |
+| **11** | `AuditLogsModule` | `src/modules/audit-logs` | Admin Only | `audit_logs` | - ບັນທຶກປະຫວັດການດຳເນີນງານທັງໝົດໃນລະບົບ (Create, Update, Delete, Upload, Download, Role Change)<br/>- ສະຖິຕິ Audit Logs ພາບລວມ (`GET /api/audit-logs/stats`)<br/>- Filter ຕາມ Contract, User, Action, Category, Date Range (`GET /api/audit-logs`)<br/>- ເກັບ Old Values ແລະ New Values ແບບ JSONB ພ້ອມ IP Address ແລະ User ID |
 
 ---
 
@@ -217,7 +218,10 @@ sequenceDiagram
 ```mermaid
 stateDiagram-v2
     [*] --> DRAFT: ວັນທີເລີ່ມມີຜົນ (effectiveDate) ຢູ່ໃນອະນາຄົດ
-    [*] --> ACTIVE: ວັນທີເລີ່ມມີຜົນ &le; ປັດຈຸບັນ
+    [*] --> ACTIVE: ວັນທີເລີ່ມມີຜົນ &le; ປັດຈຸບັນ ແລະ ເຫຼືອ > 60 ວັນ
+    [*] --> EXPIRING_SOON: ສ້າງສັນຍາທີ່ເຫຼືອ &le; 60 ວັນ (ສ້າງແຈ້ງເຕືອນທັນທີ!)
+    [*] --> EXPIRED: ສ້າງສັນຍາທີ່ວັນໝົດອາຍຸຜ່ານມາແລ້ວ (ສ້າງແຈ້ງເຕືອນທັນທີ!)
+
     DRAFT --> ACTIVE: ເມື່ອຮອດວັນທີເລີ່ມມີຜົນສັກສິດ
 
     state "ACTIVE (ມີຜົນບັງຄັບໃຊ້)" as ACTIVE
@@ -225,8 +229,8 @@ stateDiagram-v2
     state "EXPIRED (ໝົດອາຍຸແລ້ວ)" as EXPIRED
     state "TERMINATED (ຍົກເລີກກ່ອນກຳນົດ)" as TERMINATED
 
-    ACTIVE --> EXPIRING_SOON: Cron Job (ທຸກທ່ຽງຄືນ 00:00) ເມື່ອເຫຼືອ &le; 60 ວັນ
-    EXPIRING_SOON --> EXPIRED: Cron Job ເມື່ອວັນທີກາຍ expirationDate
+    ACTIVE --> EXPIRING_SOON: Cron Job (00:05 / 00:08) ຫຼື Trigger API ເມື່ອເຫຼືອ &le; 60 ວັນ
+    EXPIRING_SOON --> EXPIRED: Cron Job ຫຼື Trigger API ເມື່ອວັນທີກາຍ expirationDate
     ACTIVE --> EXPIRED: Cron Job ກວດພົບວັນທີກາຍກຳນົດ
     ACTIVE --> TERMINATED: ຜູ້ມີສິດ Admin / Main User ກົດຍົກເລີກສັນຍາ
     EXPIRING_SOON --> TERMINATED: ຍົກເລີກກ່ອນກຳນົດ
@@ -252,8 +256,11 @@ flowchart TD
 
     PPAFlow --> FormInput["ປ້ອນຂໍ້ມູນກຳລັງຕິດຕັ້ງ (MW), ອັດຕາຄ່າໄຟ (Tariff), ສະຖານທີ່, ອາຍຸສັນຍາ"]
     PSAFlow --> FormInput
-    FormInput --> SavePower["ບັນທຶກລົງຕາຕະລາງ power_contracts"]
-    SavePower --> AuditPower["ບັນທຶກ AuditLog: CREATE_POWER_CONTRACT"]
+    FormInput --> CheckExpiry{"ວັນໝົດອາຍຸ &le; 60 ວັນ<br/>ຫຼື ໝົດອາຍຸແລ້ວບໍ?"}
+    CheckExpiry -- "ແມ່ນ" --> SaveAndNotif["1. ບັນທຶກສັນຍາ (EXPIRING_SOON / EXPIRED)<br/>2. ສ້າງແຈ້ງເຕືອນທັນທີ (PowerContractNotification)"]
+    CheckExpiry -- "ບໍ່ແມ່ນ" --> SavePower["ບັນທຶກສັນຍາ (ACTIVE / DRAFT)"]
+    SaveAndNotif --> AuditPower["ບັນທຶກ AuditLog: CREATE_POWER_CONTRACT"]
+    SavePower --> AuditPower
     AuditPower --> SuccessPower["201 Created: ສ້າງສັນຍາໄຟຟ້າສຳເລັດ"]
 ```
 
@@ -328,8 +335,6 @@ graph TD
 
 ```mermaid
 erDiagram
-    departments ||--o{ contracts : "departmentId"
-    departments ||--o{ power_contracts : "departmentId"
     departments ||--o{ legal_documents : "departmentId"
     departments ||--o{ legal_cases : "departmentId"
 
@@ -447,7 +452,8 @@ erDiagram
         date effective_date
         date expiration_date
         int notify_days_before
-        uuid department_id FK
+        boolean is_expiry_notified
+        string implementer
         uuid created_by_id FK
         timestamp deleted_at
     }
@@ -472,8 +478,8 @@ erDiagram
         string tariff_currency
         string additional_details
         int notify_days_before
+        boolean is_expiry_notified
         enum status "DRAFT, ACTIVE, EXPIRING_SOON, EXPIRED, TERMINATED"
-        uuid department_id FK
         uuid created_by_id FK
         timestamp deleted_at
     }
@@ -562,8 +568,9 @@ erDiagram
         uuid contract_id FK
         string title
         string message
+        int days_remaining
         boolean is_read
-        timestamp created_at
+        timestamp notified_date
     }
 
     power_notifications {
@@ -572,17 +579,17 @@ erDiagram
         uuid power_contract_id FK
         string title
         string message
+        int days_remaining
         boolean is_read
-        timestamp created_at
+        timestamp notified_date
     }
 
     audit_logs {
         bigint id PK
         uuid user_id FK
         uuid contract_id
+        uuid power_contract_id
         string action
-        string entity_name
-        string record_id
         jsonb old_values
         jsonb new_values
         string ip_address
@@ -633,16 +640,16 @@ erDiagram
 
 | ຊື່ຕົວແປ (Environment Variable) | ຄ່າຕົວຢ່າງ (Development) | ຄ່າຕົວຢ່າງ (Docker) | ຄຳອະທິບາຍ |
 | :--- | :--- | :--- | :--- |
-| `PORT` | `3001` | `3001` | ພອດທີ່ NestJS Server ຮັບການເຊື່ອມຕໍ່ |
+| `PORT` | `4000` | `4000` | ພອດທີ່ NestJS Server ຮັບການເຊື່ອມຕໍ່ |
 | `DATABASE_URL` | `postgresql://user:pass@localhost:5432/legal_contract_db?schema=public` | `postgresql://user:pass@host.docker.internal:5432/legal_contract_db?schema=public` | Connection URL ສຳລັບ PostgreSQL |
 | `JWT_SECRET` | `super_secret_key...` | `super_secret_key...` | Secret Key ສຳລັບເຊັນ ແລະ ກວດສອບ JWT Token |
 | `HRM_SYNC_USERNAME` | `Ton` | `Ton` | Username ບັນຊີລະບົບສຳລັບ Sync ຂໍ້ມູນກັບ HRM |
 | `HRM_SYNC_PASSWORD` | `HRM1234` | `HRM1234` | Password ບັນຊີລະບົບສຳລັບ Sync ຂໍ້ມູນກັບ HRM |
-| `UPLOAD_DIR` | `./uploads/contracts` | `/app/uploads/contracts` | ໂຟລເດີຈັດເກັບໄຟລ໌ແນບສັນຍາທົ່ວໄປ |
-| `UPLOAD_DIR_POWER_CONTRACTS` | `./uploads/power-contracts` | `/app/uploads/power-contracts` | ໂຟລເດີຈັດເກັບໄຟລ໌ແນບສັນຍາຊື້-ຂາຍໄຟຟ້າ |
-| `UPLOAD_DIR_LEGAL_DOCS` | `./uploads/legal-documents` | `/app/uploads/legal-documents` | ໂຟລເດີຈັດເກັບໄຟລ໌ແນບນິຕິກຳ |
-| `UPLOAD_DIR_LEGAL_CASES` | `./uploads/legal-cases` | `/app/uploads/legal-cases` | ໂຟລເດີຈັດເກັບໄຟລ໌ແນບສຳນວນຄະດີ |
-| `TICKET_UPLOAD_DIR` | `./uploads/tickets` | `/app/uploads/tickets` | ໂຟລເດີຈັດເກັບໄຟລ໌ແນບແຈ້ງບັນຫາ Support |
+| `UPLOAD_DIR` | `../uploads/contracts` | `/app/uploads/contracts` | ໂຟລເດີຈັດເກັບໄຟລ໌ແນບສັນຍາທົ່ວໄປ |
+| `POWER_CONTRACT_UPLOAD_DIR` | `../uploads/power-contracts` | `/app/uploads/power-contracts` | ໂຟລເດີຈັດເກັບໄຟລ໌ແນບສັນຍາຊື້-ຂາຍໄຟຟ້າ |
+| `UPLOAD_DIR_LEGAL_DOCS` | `../uploads/legal-documents` | `/app/uploads/legal-documents` | ໂຟລເດີຈັດເກັບໄຟລ໌ແນບນິຕິກຳ |
+| `UPLOAD_DIR_LEGAL_CASES` | `../uploads/legal-cases` | `/app/uploads/legal-cases` | ໂຟລເດີຈັດເກັບໄຟລ໌ແນບສຳນວນຄະດີ |
+| `TICKET_UPLOAD_DIR` | `../uploads/tickets` | `/app/uploads/tickets` | ໂຟລເດີຈັດເກັບໄຟລ໌ແນບແຈ້ງບັນຫາ Support |
 
 ### 7.2 ຂັ້ນຕອນການ Deploy ຜ່ານ Docker Compose
 
