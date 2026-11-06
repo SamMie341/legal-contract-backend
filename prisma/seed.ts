@@ -4,7 +4,13 @@ import { PrismaClient, UserRole } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { Pool } from 'pg';
 
-const connectionString = process.env.DATABASE_URL;
+import * as fs from 'fs';
+import * as path from 'path';
+
+const envPath = path.resolve(process.cwd(), '.env');
+const envContent = fs.existsSync(envPath) ? fs.readFileSync(envPath, 'utf8') : '';
+const dbUrlMatch = envContent.match(/DATABASE_URL=["']?(.*?)["']?(\r?\n|$)/);
+const connectionString = dbUrlMatch ? dbUrlMatch[1] : process.env.DATABASE_URL;
 const pool = new Pool({ connectionString });
 const adapter = new PrismaPg(pool);
 
@@ -128,4 +134,5 @@ main()
     })
     .finally(async () => {
         await prisma.$disconnect();
+        await pool.end();
     });
