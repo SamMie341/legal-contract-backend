@@ -10,7 +10,7 @@ export interface IAuthUserRepository {
     updateLastLogin(userId: string): Promise<void>;
     createSyncedEmployee(data: {
         empCode: string;
-        email: string;
+        email?: string | null;
         fullName: string;
         department: string;
         division: string;
@@ -22,7 +22,7 @@ export interface IAuthUserRepository {
     }): Promise<any>;
     upsertHrmUser(data: {
         empCode: string;
-        email: string;
+        email?: string | null;
         fullName: string;
         department: string;
         division: string;

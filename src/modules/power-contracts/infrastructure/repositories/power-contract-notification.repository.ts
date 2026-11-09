@@ -11,6 +11,7 @@ export class PowerContractNotificationRepository implements IPowerContractNotifi
         return this.prisma.powerContractNotification.findMany({
             where: {
                 isRead: false,
+                powerContract: { deletedAt: null },
                 OR: [{ userId: null }, { userId: userId }],
             },
             orderBy: { notifiedDate: 'desc' },
@@ -22,6 +23,7 @@ export class PowerContractNotificationRepository implements IPowerContractNotifi
                         projectName: true,
                         contractType: true,
                         expirationDate: true,
+                        deletedAt: true,
                     },
                 },
             },
@@ -31,6 +33,7 @@ export class PowerContractNotificationRepository implements IPowerContractNotifi
     async getAllNotifications(userId?: string, limit: number = 50): Promise<PowerContractNotification[]> {
         return this.prisma.powerContractNotification.findMany({
             where: {
+                powerContract: { deletedAt: null },
                 OR: [{ userId: null }, { userId: userId }],
             },
             take: limit,
@@ -43,6 +46,7 @@ export class PowerContractNotificationRepository implements IPowerContractNotifi
                         projectName: true,
                         contractType: true,
                         expirationDate: true,
+                        deletedAt: true,
                     },
                 },
             },

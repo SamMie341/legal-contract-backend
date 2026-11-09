@@ -139,7 +139,7 @@ model User {
   id           String  @id @default(uuid()) @db.Uuid
   employeeCode String? @unique @map("employee_code")
   username     String  @unique
-  email        String  @unique
+  email        String? @unique
   passwordHash String  @map("password_hash")
   fullName     String  @map("full_name")
   department   String?
@@ -176,7 +176,8 @@ model User {
   uploadedAttachments   ContractAttachment[]   @relation("AttachmentUploader")
   downloadLogs          ContractDownloadLog[]
   notifications         ContractNotification[]
-  auditLogs             AuditLog[]
+  auditLogs             AuditLog[]             @relation("AuditLogActor")
+  targetedAuditLogs     AuditLog[]             @relation("AuditLogTargetUser")
   createdSupportTickets SupportTicket[]        @relation("TicketReporter")
   assignedTickets       SupportTicket[]        @relation("TicketAssignee")
 
@@ -489,11 +490,13 @@ model SupportTicket {
 // ==========================================
 
 model AuditLog {
-  id         String    @id @default(uuid()) @db.Uuid
-  userId     String    @map("user_id") @db.Uuid
-  user       User      @relation(fields: [userId], references: [id])
-  contractId String?   @map("contract_id") @db.Uuid
-  contract   Contract? @relation(fields: [contractId], references: [id], onDelete: SetNull)
+  id           String         @id @default(uuid()) @db.Uuid
+  userId       String         @map("user_id") @db.Uuid
+  user         User           @relation("AuditLogActor", fields: [userId], references: [id])
+  targetUserId String?        @map("target_user_id") @db.Uuid
+  targetUser   User?          @relation("AuditLogTargetUser", fields: [targetUserId], references: [id], onDelete: SetNull)
+  contractId   String?        @map("contract_id") @db.Uuid
+  contract     Contract?      @relation(fields: [contractId], references: [id], onDelete: SetNull)
 
   powerContractId String?        @map("power_contract_id") @db.Uuid
   powerContract   PowerContract? @relation(fields: [powerContractId], references: [id], onDelete: SetNull)
@@ -506,6 +509,7 @@ model AuditLog {
 
   @@index([contractId])
   @@index([powerContractId])
+  @@index([targetUserId])
   @@index([userId, createdAt])
   @@map("audit_logs")
 }

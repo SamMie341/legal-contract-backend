@@ -16,6 +16,7 @@ export class GetAuditLogsUseCase {
         contractId?: string;
         powerContractId?: string;
         userId?: string;
+        targetUserId?: string;
         action?: AuditAction;
         category?: string;
         startDate?: string;
@@ -76,6 +77,7 @@ export class GetAuditLogsUseCase {
             contractId: query.contractId,
             powerContractId: query.powerContractId,
             userId: query.userId,
+            targetUserId: query.targetUserId,
             action: query.action,
             actions,
             startDate: query.startDate,

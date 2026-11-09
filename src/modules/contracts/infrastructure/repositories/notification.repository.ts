@@ -11,6 +11,7 @@ export class NotificationRepository implements INotificationRepository {
         return this.prisma.contractNotification.findMany({
             where: {
                 isRead: false,
+                contract: { deletedAt: null },
                 OR: [
                     { userId: null },
                     { userId: userId }
@@ -18,7 +19,7 @@ export class NotificationRepository implements INotificationRepository {
             },
             orderBy: { notifiedDate: 'desc' },
             include: {
-                contract: { select: { contractNumber: true, title: true, expirationDate: true } }
+                contract: { select: { contractNumber: true, title: true, expirationDate: true, deletedAt: true } }
             }
         });
     }
@@ -26,6 +27,7 @@ export class NotificationRepository implements INotificationRepository {
     async getAllNotifications(userId?: string, limit: number = 50): Promise<ContractNotification[]> {
         return this.prisma.contractNotification.findMany({
             where: {
+                contract: { deletedAt: null },
                 OR: [
                     { userId: null },
                     { userId: userId }
@@ -34,7 +36,7 @@ export class NotificationRepository implements INotificationRepository {
             take: limit,
             orderBy: { notifiedDate: 'desc' },
             include: {
-                contract: { select: { contractNumber: true, title: true, expirationDate: true } }
+                contract: { select: { contractNumber: true, title: true, expirationDate: true, deletedAt: true } }
             }
         });
     }

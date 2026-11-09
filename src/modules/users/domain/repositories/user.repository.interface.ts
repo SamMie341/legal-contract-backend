@@ -10,6 +10,8 @@ export interface IUserRepository {
         search?: string;
         role?: UserRole;
         isActive?: boolean;
+        division?: string;
+        department?: string;
     }): Promise<{ data: any[]; total: number }>;
     findById(id: string): Promise<any | null>;
     findByEmployeeCode(employeeCode: string): Promise<User | null>;
@@ -17,7 +19,7 @@ export interface IUserRepository {
         data: {
             employeeCode: string;
             username: string;
-            email: string;
+            email?: string | null;
             passwordHash: string;
             fullName: string;
             department?: string;
@@ -38,6 +40,7 @@ export interface IUserRepository {
     ): Promise<any>;
     updateWithAudit(id: string, dto: UpdateUserDto, oldUser: any, currentUserId: string): Promise<any>;
     softDeleteWithAudit(id: string, oldUser: any, currentUserId: string): Promise<void>;
+    findRoleById(roleId: string): Promise<any | null>;
     findUserWithPassword(id: string): Promise<User | null>;
     updatePasswordWithAudit(
         id: string,

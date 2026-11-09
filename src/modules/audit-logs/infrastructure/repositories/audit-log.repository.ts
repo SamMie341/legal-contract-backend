@@ -14,12 +14,13 @@ export class AuditLogRepository implements IAuditLogRepository {
         contractId?: string;
         powerContractId?: string;
         userId?: string;
+        targetUserId?: string;
         action?: AuditAction;
         actions?: AuditAction[];
         startDate?: string;
         endDate?: string;
     }): Promise<{ data: any[]; total: number }> {
-        const { skip, take, search, contractId, powerContractId, userId, action, actions, startDate, endDate } = params;
+        const { skip, take, search, contractId, powerContractId, userId, targetUserId, action, actions, startDate, endDate } = params;
 
         const whereCondition: any = {};
 
@@ -33,6 +34,10 @@ export class AuditLogRepository implements IAuditLogRepository {
 
         if (userId) {
             whereCondition.userId = userId;
+        }
+
+        if (targetUserId) {
+            whereCondition.targetUserId = targetUserId;
         }
 
         if (action) {
@@ -59,6 +64,11 @@ export class AuditLogRepository implements IAuditLogRepository {
                 { user: { fullName: { contains: term, mode: 'insensitive' } } },
                 { user: { employeeCode: { contains: term, mode: 'insensitive' } } },
                 { user: { department: { contains: term, mode: 'insensitive' } } },
+                { targetUser: { fullName: { contains: term, mode: 'insensitive' } } },
+                { targetUser: { employeeCode: { contains: term, mode: 'insensitive' } } },
+                { targetUser: { username: { contains: term, mode: 'insensitive' } } },
+                { targetUser: { department: { contains: term, mode: 'insensitive' } } },
+                { targetUser: { division: { contains: term, mode: 'insensitive' } } },
                 { contract: { title: { contains: term, mode: 'insensitive' } } },
                 { contract: { contractNumber: { contains: term, mode: 'insensitive' } } },
                 { powerContract: { projectName: { contains: term, mode: 'insensitive' } } },
@@ -75,6 +85,17 @@ export class AuditLogRepository implements IAuditLogRepository {
                 orderBy: { createdAt: 'desc' },
                 include: {
                     user: { select: { id: true, fullName: true, employeeCode: true, department: true } },
+                    targetUser: {
+                        select: {
+                            id: true,
+                            fullName: true,
+                            employeeCode: true,
+                            username: true,
+                            department: true,
+                            division: true,
+                            role: true,
+                        },
+                    },
                     contract: { select: { id: true, title: true, contractNumber: true } },
                     powerContract: { select: { id: true, projectName: true, contractNumber: true } },
                 },
@@ -82,7 +103,28 @@ export class AuditLogRepository implements IAuditLogRepository {
             this.prisma.auditLog.count({ where: whereCondition }),
         ]);
 
-        return { data, total };
+        const formattedData = data.map((item) => {
+            let targetUser = item.targetUser;
+            if (!targetUser) {
+                const fromOld = (item.oldValues as any)?.targetUser;
+                const fromNew = (item.newValues as any)?.targetUser;
+                if (fromNew || fromOld) {
+                    targetUser = fromNew || fromOld;
+                } else if ((item.oldValues as any)?.deletedUserId) {
+                    targetUser = {
+                        id: (item.oldValues as any).deletedUserId,
+                        employeeCode: (item.oldValues as any).employeeCode,
+                        username: (item.oldValues as any).username,
+                    } as any;
+                }
+            }
+            return {
+                ...item,
+                targetUser: targetUser || null,
+            };
+        });
+
+        return { data: formattedData, total };
     }
 
     async getStats(): Promise<AuditLogStats> {

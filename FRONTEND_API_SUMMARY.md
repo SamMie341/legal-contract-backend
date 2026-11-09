@@ -1,8 +1,8 @@
 # 📘 เอกสารสรุปการเชื่อมต่อ API ทั้งระบบ (Frontend Integration Guide)
 
 **ระบบบริหารจัดการสัญญา, นิติกรรม, คดีความ และสัญญาซื้อ-ขายไฟฟ้า (EDL Legal Management System)**  
-**Version:** 2.1 (Full Dynamic RBAC, Power Contracts, Audit Logs & Instant Expiry Notifications)  
-**อัปเดตล่าสุด:** 05/11/2026
+**Version:** 2.2 (Nullable Email Support, Power Contracts, Audit Logs & Instant Expiry Notifications)  
+**อัปเดตล่าสุด:** 09/11/2026
 
 ---
 
@@ -47,7 +47,7 @@ graph TD
 | **2. สัญญาซื้อ-ขายไฟฟ้า** | **`POWER_CONTRACTS`** | `ພະແນກສັນຍາຊື້-ຂາຍໄຟຟ້າ` | `power-contracts`, `power-notifications` |
 | **3. นิติกรรม และข้อขัดแย้ง** | **`LEGAL_AND_DISPUTE`** | `ພະແນກນິຕິກຳ ແລະ ແກ້ໄຂຂໍ້ຂັດແຍ່ງ` | `legal-documents`, `legal-cases` |
 | **โมดูลส่วนกลาง** | `COMMON` | ทุกแผนก | `departments`, `support` |
-| **ผู้ดูแลระบบ** | `ADMIN` | ทุกแผนก (`role === "ADMIN"`) | `roles`, `users`, `audit-logs` + ทุกโมดูลข้างต้น |
+| **ผู้ดูแลระบบ & หัวหน้าแผนก** | `ADMIN` / `DIVISION_HEAD` | ทุกแผนก (Admin) / เฉพาะแผนกตนเอง (Division Head) | `users` (Admin & Division Head), `roles` & `audit-logs` (Admin Only) + ทุกโมดูลข้างต้น |
 
 ### Action Matrix 5 สิทธิ์ต่อโมดูล
 ในแต่ละโมดูลสามารถควบคุมสิทธิ์ระดับปุ่มได้ 5 ด้าน:
@@ -527,26 +527,71 @@ Admin สามารถสร้าง Role ใหม่ และกำหน�
 
 ---
 
-## 8. ระบบจัดการผู้ใช้งาน (Users Management: `/api/users` - Admin Only)
+## 8. ระบบจัดการผู้ใช้งาน (Users Management: `/api/users` - Admin & Division Head)
 
-| การทำงาน | Method & Endpoint | รายละเอียด |
-| :--- | :--- | :--- |
-| **ค้นหาข้อมูลจาก HRM (Auto-fill)** | `GET /api/users/hrm/:empCode` | ค้นหาชื่อ แผนก ตำแหน่ง อีเมล เบอร์โทรจากระบบ HRM เพื่อกรอกฟอร์มอัตโนมัติ |
-| **ดึงรายชื่อผู้ใช้** | `GET /api/users` | Query: `page`, `limit`, `search`, `role`, `isActive` |
-| **ดึงข้อมูลผู้ใช้ตาม ID** | `GET /api/users/:id` | คืนโปรไฟล์, Role, และ Module Permissions |
-| **สร้างผู้ใช้ใหม่** | `POST /api/users` | ดู Payload ด้านล่าง |
-| **แก้ไขผู้ใช้และสิทธิ์** | `PATCH /api/users/:id` | แก้ไข Role, แผนก หรือปรับแต่ง Module Permissions เฉพาะบุคคล |
-| **รีเซ็ตรหัสผ่านผู้ใช้** | `PATCH /api/users/:id/reset-password` | Admin ตั้งรหัสผ่านใหม่ให้ผู้ใช้ |
-| **เปลี่ยนรหัสผ่านตนเอง** | `PATCH /api/users/change-password` | ผู้ใช้ทั่วไปเปลี่ยนรหัสผ่าน `{ "oldPassword": "...", "newPassword": "..." }` |
-| **ลบบัญชีผู้ใช้** | `DELETE /api/users/:id` | Soft delete |
+ระบบจัดการผู้ใช้งานรองรับทั้ง **`ADMIN`** (ดูแลทั้งระบบ) และ **`DIVISION_HEAD`** (หัวหน้าแผนก - ดูแลเฉพาะบุคลากรในแผนกและฝ่ายของตนเอง):
 
-**Payload สร้างผู้ใช้ใหม่ (`POST /api/users`):**
+### 8.1 สิทธิ์การใช้งานแยกตามบทบาท (Matrix)
+| การทำงาน | Method & Endpoint | `ADMIN` | `DIVISION_HEAD` (หัวหน้าแผนก) |
+| :--- | :--- | :---: | :---: |
+| **ค้นหาข้อมูลจาก HRM (Auto-fill)** | `GET /api/users/hrm/:empCode` | ✅ ได้ทุกคน | ✅ ค้นหาได้ (มี flag เตือนหากอยู่ต่างแผนก) |
+| **ดึงรายชื่อผู้ใช้** | `GET /api/users` | ✅ ดูได้ทุกคน | ✅ ดูได้เฉพาะคนในแผนกของตนเอง |
+| **ดึงข้อมูลผู้ใช้ตาม ID** | `GET /api/users/:id` | ✅ ดูได้ทุกคน | ✅ ดูได้เฉพาะคนในแผนกของตนเอง |
+| **สร้างผู้ใช้ใหม่** | `POST /api/users` | ✅ สร้างได้ทุก Role | ✅ สร้างได้เฉพาะคนในแผนก (ห้ามสร้าง Admin/Dept Head) |
+| **แก้ไขผู้ใช้และสิทธิ์** | `PATCH /api/users/:id` | ✅ แก้ไขได้ทุกคน | ✅ แก้ไขได้เฉพาะคนในแผนก (ห้ามย้ายแผนก/ห้ามปรับเป็น Admin) |
+| **รีเซ็ตรหัสผ่านผู้ใช้** | `PATCH /api/users/:id/reset-password` | ✅ ทำได้ | ❌ Forbidden (เฉพาะ Admin) |
+| **เปลี่ยนรหัสผ่านตนเอง** | `PATCH /api/users/change-password` | ✅ ทำได้ | ✅ ทำได้ (ผู้ใช้ทุกคนทำได้) |
+| **ลบบัญชีผู้ใช้ (Soft Delete)** | `DELETE /api/users/:id` | ✅ ทำได้ | ❌ Forbidden (เฉพาะ Admin) |
+
+---
+
+### 8.2 ค้นหาข้อมูลพนักงานจาก HRM (Auto-fill: `GET /api/users/hrm/:empCode`)
+เมื่อผู้ใช้กรอกรหัสพนักงาน (เช่น `EDL-101`) ระบบจะเช็คข้อมูลจาก HRM พร้อมตรวจเช็คว่าพนักงานคนนี้อยู่แผนกและฝ่ายเดียวกับผู้ค้นหาหรือไม่:
+
+**Response Example:**
+```json
+{
+  "message": "ດຶງຂໍ້ມູນພະນັກງານຈາກ HRM ສຳເລັດ",
+  "data": {
+    "employeeCode": "EDL-101",
+    "fullName": "ສົມສັກ ສີສຸວັນ",
+    "department": "ຝ່າຍກົດໝາຍ",
+    "division": "ພະແນກສັນຍາທົ່ວໄປ",
+    "unit": "ໜ່ວຍງານສັນຍາ",
+    "position": "ວິຊາການ",
+    "email": "somsak@edl.com.la",
+    "phone": "02055555555",
+    "alreadyInSystem": false,
+    "isSameDivision": true,
+    "canAdd": true,
+    "divisionMismatchWarning": null
+  }
+}
+```
+
+> [!WARNING]
+> **กรณีที่พนักงานอยู่ต่างแผนกหรือต่างฝ่าย (เมื่อ DIVISION_HEAD เป็นผู้ค้นหา):**
+> ```json
+> {
+>   "isSameDivision": false,
+>   "canAdd": false,
+>   "divisionMismatchWarning": "ພະນັກງານລະຫັດນີ້ສັງກັດພະແນກ \"ພະແນກສັນຍາຊື້-ຂາຍໄຟຟ້າ\" (ຝ່າຍ: \"ຝ່າຍກົດໝາຍ\") ເຊິ່ງບໍ່ແມ່ນພະແນກຂອງທ່ານ. ທ່ານບໍ່ສາມາດເພີ່ມຜູ້ໃຊ້ນີ້ໄດ້."
+> }
+> ```
+> **Frontend Action:** หาก `canAdd === false` ให้แสดงกล่อง Alert สีแดงเตือนผู้ใช้ และ **Disable ปุ่ม "ບັນທຶກ (Save)"** ทันที
+
+---
+
+### 8.3 สร้างผู้ใช้ใหม่ (`POST /api/users`)
+
+**Request Payload:**
 ```json
 {
   "employeeCode": "EDL-44652",
   "role": "MAIN_USER",
   "roleId": "94029266-d1a0-4c2c-b1df-c51e8b3ea626",
   "division": "ພະແນກສັນຍາທົ່ວໄປ",
+  "department": "ຝ່າຍກົດໝາຍ",
   "modulePermissions": [
     {
       "module": "CONTRACTS",
@@ -555,33 +600,72 @@ Admin สามารถสร้าง Role ใหม่ และกำหน�
       "canEdit": true,
       "canDelete": true,
       "canDownload": true
-    },
-    {
-      "module": "POWER_CONTRACTS",
-      "canView": false,
-      "canUpload": false,
-      "canEdit": false,
-      "canDelete": false,
-      "canDownload": false
-    },
-    {
-      "module": "LEGAL_DOCUMENTS",
-      "canView": false,
-      "canUpload": false,
-      "canEdit": false,
-      "canDelete": false,
-      "canDownload": false
-    },
-    {
-      "module": "LEGAL_CASES",
-      "canView": false,
-      "canUpload": false,
-      "canEdit": false,
-      "canDelete": false,
-      "canDownload": false
     }
   ]
 }
+```
+
+#### กฎความปลอดภัยของ Backend (Security Rules สำหรับ `DIVISION_HEAD`):
+1. **Division & Department Guard:** พนักงานที่ดึงจาก HRM ต้องมีชื่อแผนก (`division`) และฝ่าย (`department`) ตรงกับหัวหน้าแผนก หากไม่ตรง ระบบจะตัดการทำงานและส่งกลับ `403 Forbidden`:
+   ```json
+   {
+     "statusCode": 403,
+     "message": "ທ່ານບໍ່ມີສິດເພີ່ມພະນັກງານຕ່າງພະແນກ (ພະນັກງານລະຫັດ \"EDL-999\" ສັງກັດພະແນກ: \"ພະແນກສັນຍາຊື້-ຂາຍໄຟຟ້າ\", ຝ່າຍ: \"ຝ່າຍກົດໝາຍ\" ແຕ່ທ່ານສັງກັດພະແນກ: \"ພະແນກສັນຍາທົ່ວໄປ\")",
+     "error": "Forbidden"
+   }
+   ```
+2. **Privilege Escalation Protection:** ห้ามเลือก Role เป็น `ADMIN` หรือ `DEPARTMENT_HEAD` (สร้างได้เฉพาะ `MAIN_USER`, `EDITOR`, `VIEWER`)
+3. **Module Scope Restriction:** ห้ามเลือกสิทธิ์ในโมดูลที่อยู่นอกแผนกของตนเอง
+4. **Auto-Lock:** หากเป็นการกรอกแบบ Manual ระบบจะล็อก `division` และ `department` ให้เป็นค่าเดียวกับหัวหน้าแผนกโดยอัตโนมัติ
+
+---
+
+### 8.4 แนวทางการนำไปปรับใช้ใน Frontend (Frontend Implementation Guide)
+
+#### 1. เปิดเมนูจัดการผู้ใช้ใน Sidebar:
+```typescript
+// ตรวจสอบสิทธิ์การแสดงเมนู Users
+const canManageUsers = 
+  user.role === 'ADMIN' || 
+  user.role === 'DIVISION_HEAD' || 
+  user.accessibleModules?.includes('users');
+```
+
+#### 2. กรอง Role Dropdown ตอนเพิ่ม/แก้ไขผู้ใช้:
+```typescript
+// ในฟอร์ม Add/Edit User Modal
+const availableRoles = allRoles.filter((role) => {
+  if (currentUser.role === 'DIVISION_HEAD') {
+    // ซ่อนบทบาท Admin และ Department Head สำหรับหัวหน้าแผนก
+    return role.name !== 'ADMIN' && role.name !== 'DEPARTMENT_HEAD';
+  }
+  return true;
+});
+```
+
+#### 3. จัดการ State ตอน Lookup HRM:
+```typescript
+const [hrmResult, setHrmResult] = useState<HrmLookupData | null>(null);
+
+const handleLookup = async (empCode: string) => {
+  const res = await api.get(`/api/users/hrm/${empCode}`);
+  setHrmResult(res.data.data);
+};
+
+// ใน JSX / Template:
+{hrmResult && !hrmResult.canAdd && (
+  <div className="alert alert-danger p-3 my-2 text-red-600 bg-red-50 border border-red-200 rounded">
+    ⚠️ {hrmResult.divisionMismatchWarning}
+  </div>
+)}
+
+<button 
+  type="submit" 
+  disabled={hrmResult && !hrmResult.canAdd}
+  className="btn btn-primary disabled:opacity-50"
+>
+  ບັນທຶກ (Save)
+</button>
 ```
 
 ---
@@ -607,14 +691,48 @@ Admin สามารถสร้าง Role ใหม่ และกำหน�
   - **Query Parameters ที่รองรับ:**
     - `page` (number): หน้าที่ต้องการ (เริ่มต้น: 1)
     - `limit` (number): จำนวนรายการต่อหน้า (เริ่มต้น: 20)
-    - `search` (string): ค้นหาข้อความ
-    - `action` (enum `AuditAction`): กรองตามการกระทำ เช่น `CREATE_CONTRACT`, `UPDATE_ROLE`, `CREATE_POWER_CONTRACT`
-    - `category` (string): `CONTRACT`, `POWER_CONTRACT`, `LEGAL`, `USER`, `ROLE`, `SECURITY`
+    - `search` (string): ค้นหาข้อความ (ครอบคลุมทั้งชื่อผู้ดำเนินการ, รหัสพนักงาน, **ชื่อและรหัสพนักงานของผู้ที่ถูกแก้ไข (Target User)**, เลขที่สัญญา, IP Address)
+    - `action` (enum `AuditAction`): กรองตามการกระทำ เช่น `CREATE_CONTRACT`, `UPDATE_ROLE`, `USER_PERMISSION_CHANGE`, `CREATE_POWER_CONTRACT`
+    - `category` (string): `CONTRACTS`, `POWER_CONTRACTS`, `LEGAL`, `SECURITY`, `ATTACHMENTS`, `ROLES`
     - `contractId` (UUID): กรองตามสัญญา
     - `powerContractId` (UUID): กรองตามสัญญาไฟฟ้า
-    - `userId` (UUID): กรองตามผู้ใช้ที่ทำรายการ
+    - `userId` (UUID): กรองตามผู้ดำเนินการ (Actor / Operator)
+    - `targetUserId` (UUID): **กรองตามผู้ที่ถูกแก้ไข (Target User)** เช่น ต้องการดูประวัติการถูกแก้ไขของพนักงานคนใดคนหนึ่ง
     - `startDate` (string: YYYY-MM-DD): วันที่เริ่มต้น
     - `endDate` (string: YYYY-MM-DD): วันที่สิ้นสุด
+
+- **โครงสร้างข้อมูลใน `data` แต่ละรายการ (Response Object Structure):**
+```json
+{
+  "id": "audit-uuid",
+  "action": "USER_PERMISSION_CHANGE",
+  "user": {
+    "id": "operator-user-uuid",
+    "fullName": "ສົມສັກ ຜູ້ດູແລລະບົບ",
+    "employeeCode": "ADMIN-01",
+    "department": "ຝ່າຍໄອທີ"
+  },
+  "targetUser": {
+    "id": "target-user-uuid",
+    "fullName": "ພົງພະສິດ ສຸກໃສ",
+    "employeeCode": "44404",
+    "username": "44404",
+    "department": "ຝ່າຍກົດໝາຍ-ສັນຍາ",
+    "division": "ພະແນກສັນຍາທົ່ວໄປ",
+    "role": "MAIN_USER"
+  },
+  "oldValues": {
+    "targetUser": { "id": "target-user-uuid", "fullName": "ພົງພະສິດ ສຸກໃສ", "employeeCode": "44404", "role": "MAIN_USER" },
+    "permissions": { "canView": true, "canUpload": false }
+  },
+  "newValues": {
+    "targetUser": { "id": "target-user-uuid", "fullName": "ພົງພະສິດ ສຸກໃສ", "employeeCode": "44404", "role": "MAIN_USER" },
+    "changes": { "canUpload": true },
+    "permissions": { "canView": true, "canUpload": true }
+  },
+  "createdAt": "2026-11-07T14:30:00.000Z"
+}
+```
 
 ---
 

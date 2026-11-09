@@ -1,9 +1,15 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../../../infrastructure/database/prisma.service.js';
 import { IUserRepository } from '../../domain/repositories/user.repository.interface.js';
 import { UpdateUserDto } from '../../application/dto/update-user.dto.js';
 import { AuditAction, User, UserRole } from '@prisma/client';
-import { buildDefaultPermissionsForRole, resolveToPrismaModules } from '../../../../core/utils/division-helper.util.js';
+import {
+    buildDefaultPermissionsForRole,
+    resolveToPrismaModules,
+    isGeneralContractDivision,
+    isPowerContractDivision,
+    isLegalAndDisputeDivision,
+} from '../../../../core/utils/division-helper.util.js';
 import { TokenVersionService } from '../../../../core/services/token-version.service.js';
 
 @Injectable()
@@ -19,29 +25,73 @@ export class UserRepository implements IUserRepository {
         search?: string;
         role?: UserRole;
         isActive?: boolean;
+        division?: string;
+        department?: string;
     }): Promise<{ data: any[]; total: number }> {
-        const { skip, take, search, role, isActive } = params;
+        const { skip, take, search, role, isActive, division, department } = params;
 
-        const whereCondition: any = {
-            deletedAt: null,
-        };
+        const andConditions: any[] = [{ deletedAt: null }];
 
         if (search) {
-            whereCondition.OR = [
-                { fullName: { contains: search, mode: 'insensitive' } },
-                { username: { contains: search, mode: 'insensitive' } },
-                { employeeCode: { contains: search, mode: 'insensitive' } },
-                { department: { contains: search, mode: 'insensitive' } },
-            ];
+            andConditions.push({
+                OR: [
+                    { fullName: { contains: search, mode: 'insensitive' } },
+                    { username: { contains: search, mode: 'insensitive' } },
+                    { employeeCode: { contains: search, mode: 'insensitive' } },
+                    { department: { contains: search, mode: 'insensitive' } },
+                ],
+            });
         }
 
         if (role) {
-            whereCondition.role = role;
+            andConditions.push({ role });
         }
 
         if (isActive !== undefined) {
-            whereCondition.isActive = isActive;
+            andConditions.push({ isActive });
         }
+
+        if (division) {
+            const trimmedDiv = division.trim();
+            if (isPowerContractDivision(trimmedDiv)) {
+                andConditions.push({
+                    OR: [
+                        { division: { contains: 'ຊື້-ຂາຍໄຟ', mode: 'insensitive' } },
+                        { division: { contains: 'ຊື້ຂາຍໄຟ', mode: 'insensitive' } },
+                    ],
+                });
+            } else if (isGeneralContractDivision(trimmedDiv)) {
+                andConditions.push({
+                    OR: [
+                        { division: { contains: 'ທົ່ວໄປ', mode: 'insensitive' } },
+                        {
+                            AND: [
+                                { division: { contains: 'ສັນຍາ', mode: 'insensitive' } },
+                                { division: { not: { contains: 'ຊື້-ຂາຍໄຟ' } } },
+                                { division: { not: { contains: 'ຊື້ຂາຍໄຟ' } } },
+                            ],
+                        },
+                    ],
+                });
+            } else if (isLegalAndDisputeDivision(trimmedDiv)) {
+                andConditions.push({
+                    OR: [
+                        { division: { contains: 'ນິຕິກຳ', mode: 'insensitive' } },
+                        { division: { contains: 'ນິຕິກໍາ', mode: 'insensitive' } },
+                        { division: { contains: 'ຂັດແຍ່ງ', mode: 'insensitive' } },
+                        { division: { contains: 'ຄະດີ', mode: 'insensitive' } },
+                    ],
+                });
+            } else {
+                andConditions.push({ division: { contains: trimmedDiv, mode: 'insensitive' } });
+            }
+        }
+
+        if (department) {
+            andConditions.push({ department: { contains: department.trim(), mode: 'insensitive' } });
+        }
+
+        const whereCondition = { AND: andConditions };
 
         const [data, total] = await this.prisma.$transaction([
             this.prisma.user.findMany({
@@ -152,7 +202,7 @@ export class UserRepository implements IUserRepository {
         data: {
             employeeCode: string;
             username: string;
-            email: string;
+            email?: string | null;
             passwordHash: string;
             fullName: string;
             department?: string;
@@ -172,6 +222,7 @@ export class UserRepository implements IUserRepository {
     ): Promise<any> {
         return this.prisma.$transaction(async (tx) => {
             const { modulePermissions, ...userData } = data as any;
+            const normalizedEmail = (userData.email && typeof userData.email === 'string') ? userData.email.trim() || null : null;
 
             let roleIdToSet = userData.roleId;
             let roleEnumToSet = userData.role;
@@ -192,7 +243,7 @@ export class UserRepository implements IUserRepository {
                 where: { employeeCode: userData.employeeCode },
                 update: {
                     username: userData.username,
-                    email: userData.email,
+                    email: normalizedEmail,
                     passwordHash: userData.passwordHash,
                     fullName: userData.fullName,
                     department: userData.department,
@@ -212,6 +263,7 @@ export class UserRepository implements IUserRepository {
                 },
                 create: {
                     ...userData,
+                    email: normalizedEmail,
                     role: roleEnumToSet,
                     roleId: roleIdToSet,
                     isActive: true,
@@ -287,17 +339,31 @@ export class UserRepository implements IUserRepository {
             await tx.auditLog.create({
                 data: {
                     userId: currentUserId,
+                    targetUserId: newUser.id,
                     action: AuditAction.USER_PERMISSION_CHANGE,
                     newValues: {
-                        syncedEmployeeCode: newUser.employeeCode,
-                        fullName: newUser.fullName,
-                        role: newUser.role,
-                        canView: newUser.canView,
-                        canUpload: newUser.canUpload,
-                        canEdit: newUser.canEdit,
-                        canDelete: newUser.canDelete,
-                        canDownload: newUser.canDownload,
-                        modulePermissions: permsToSet,
+                        action: 'CREATE_USER',
+                        targetUser: {
+                            id: newUser.id,
+                            employeeCode: newUser.employeeCode,
+                            username: newUser.username,
+                            fullName: newUser.fullName,
+                            department: newUser.department,
+                            division: newUser.division,
+                            unit: newUser.unit,
+                            position: newUser.position,
+                            role: newUser.role,
+                            roleId: roleIdToSet,
+                            isActive: true,
+                        },
+                        permissions: {
+                            canView: newUser.canView,
+                            canUpload: newUser.canUpload,
+                            canEdit: newUser.canEdit,
+                            canDelete: newUser.canDelete,
+                            canDownload: newUser.canDownload,
+                            modulePermissions: permsToSet,
+                        },
                     },
                 },
             });
@@ -457,20 +523,62 @@ export class UserRepository implements IUserRepository {
                 },
             });
 
+            if (!updatedUser) {
+                throw new NotFoundException('ບໍ່ພົບຜູ້ໃຊ້ນີ້ໃນລະບົບ');
+            }
+
             await tx.auditLog.create({
                 data: {
                     userId: currentUserId,
+                    targetUserId: id,
                     action: AuditAction.USER_PERMISSION_CHANGE,
                     oldValues: {
-                        role: oldUser.role,
-                        isActive: oldUser.isActive,
-                        canView: oldUser.canView,
-                        canUpload: oldUser.canUpload,
-                        canEdit: oldUser.canEdit,
-                        canDelete: oldUser.canDelete,
-                        canDownload: oldUser.canDownload,
+                        targetUser: {
+                            id: oldUser.id,
+                            employeeCode: oldUser.employeeCode,
+                            username: oldUser.username,
+                            fullName: oldUser.fullName,
+                            department: oldUser.department,
+                            division: oldUser.division,
+                            unit: oldUser.unit,
+                            position: oldUser.position,
+                            role: oldUser.role,
+                            roleId: oldUser.roleId,
+                            isActive: oldUser.isActive,
+                        },
+                        permissions: {
+                            canView: oldUser.canView,
+                            canUpload: oldUser.canUpload,
+                            canEdit: oldUser.canEdit,
+                            canDelete: oldUser.canDelete,
+                            canDownload: oldUser.canDownload,
+                            modulePermissions: oldUser.modulePermissions,
+                        },
                     },
-                    newValues: JSON.parse(JSON.stringify(dto)),
+                    newValues: {
+                        targetUser: {
+                            id: updatedUser.id,
+                            employeeCode: updatedUser.employeeCode,
+                            username: updatedUser.username,
+                            fullName: updatedUser.fullName,
+                            department: updatedUser.department,
+                            division: updatedUser.division,
+                            unit: updatedUser.unit,
+                            position: updatedUser.position,
+                            role: updatedUser.role,
+                            roleId: updatedUser.roleId,
+                            isActive: updatedUser.isActive,
+                        },
+                        changes: JSON.parse(JSON.stringify(dto)),
+                        permissions: {
+                            canView: updatedUser.canView,
+                            canUpload: updatedUser.canUpload,
+                            canEdit: updatedUser.canEdit,
+                            canDelete: updatedUser.canDelete,
+                            canDownload: updatedUser.canDownload,
+                            modulePermissions: updatedUser.modulePermissions,
+                        },
+                    },
                 },
             });
 
@@ -496,15 +604,44 @@ export class UserRepository implements IUserRepository {
             await tx.auditLog.create({
                 data: {
                     userId: currentUserId,
+                    targetUserId: id,
                     action: AuditAction.USER_PERMISSION_CHANGE,
-                    oldValues: { deletedUserId: id, employeeCode: oldUser.employeeCode, username: oldUser.username },
-                    newValues: { deletedAt: new Date(), isActive: false },
+                    oldValues: {
+                        action: 'DELETE_USER',
+                        targetUser: {
+                            id,
+                            employeeCode: oldUser.employeeCode,
+                            username: oldUser.username,
+                            fullName: oldUser.fullName,
+                            department: oldUser.department,
+                            division: oldUser.division,
+                            role: oldUser.role,
+                            isActive: oldUser.isActive,
+                        },
+                    },
+                    newValues: {
+                        deletedAt: new Date(),
+                        isActive: false,
+                        targetUser: {
+                            id,
+                            employeeCode: oldUser.employeeCode,
+                            fullName: oldUser.fullName,
+                            isActive: false,
+                        },
+                    },
                 },
             });
         });
 
         // ຍົກເລີກສິດ (Invalidate) Token ທັນທີ
         await this.tokenVersionService.invalidateUser(id);
+    }
+
+    async findRoleById(roleId: string): Promise<any | null> {
+        return this.prisma.role.findUnique({
+            where: { id: roleId },
+            include: { permissions: true },
+        });
     }
 
     async findUserWithPassword(id: string): Promise<User | null> {
@@ -523,22 +660,39 @@ export class UserRepository implements IUserRepository {
             const user = await tx.user.update({
                 where: { id },
                 data: { passwordHash: newPasswordHash },
-                select: { id: true, username: true, employeeCode: true },
+                select: {
+                    id: true,
+                    username: true,
+                    employeeCode: true,
+                    fullName: true,
+                    department: true,
+                    division: true,
+                    role: true,
+                },
             });
 
             await tx.auditLog.create({
                 data: {
                     userId: currentUserId,
+                    targetUserId: id,
                     action: AuditAction.USER_PERMISSION_CHANGE,
                     oldValues: {
-                        targetUserId: id,
-                        username: user.username,
-                        employeeCode: user.employeeCode,
+                        action: actionType,
+                        targetUser: {
+                            id,
+                            username: user.username,
+                            employeeCode: user.employeeCode,
+                            fullName: user.fullName,
+                            department: user.department,
+                            division: user.division,
+                            role: user.role,
+                        },
                     },
                     newValues: {
                         action: actionType,
                         targetUserId: id,
                         updatedBy: currentUserId,
+                        passwordUpdated: true,
                     },
                 },
             });

@@ -157,16 +157,20 @@ export class LegalDocumentRepository implements ILegalDocumentRepository {
                     userId,
                     action: AuditAction.UPDATE_LEGAL_DOCUMENT,
                     oldValues: {
+                        docId: existing.id,
                         docTitle: existing.docTitle,
                         docNumberDate: existing.docNumberDate,
                         status: existing.status,
                         docType: existing.docType,
+                        responsiblePerson: existing.responsiblePerson,
                     },
                     newValues: {
+                        docId: updated.id,
                         docTitle: updated.docTitle,
                         docNumberDate: updated.docNumberDate,
                         status: updated.status,
                         docType: updated.docType,
+                        responsiblePerson: updated.responsiblePerson,
                     },
                 },
             });

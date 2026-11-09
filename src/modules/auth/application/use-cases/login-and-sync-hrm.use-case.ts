@@ -32,7 +32,7 @@ export class LoginAndSyncHrmUseCase {
         const divisionName = hrmEmployee.office?.division?.division_name || '';
         const unitName = hrmEmployee.office?.unit?.unit_name || '';
         const positionName = hrmEmployee.office?.position?.pos_name || '';
-        const email = hrmEmployee.email || ''; // Fallback email
+        const email = hrmEmployee.email?.trim() || null; // Nullable if not provided
 
         // สร้างรหัสผ่านจำลองสำหรับการเข้าระบบแบบ Local
         const dummyPasswordHash = await bcrypt.hash(dto.password, 10);

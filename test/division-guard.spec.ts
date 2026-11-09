@@ -217,15 +217,19 @@ describe('DivisionHelper (ການແຍກສິດ ແລະ ໂມດູນ�
             expect(deptHeadPerms.every((p) => p.canView && p.canDownload && !p.canUpload && !p.canEdit && !p.canDelete)).toBe(true);
 
             const divHeadPerms = buildDefaultPermissionsForRole(UserRole.DIVISION_HEAD, Division.GENERAL_CONTRACT);
-            expect(divHeadPerms).toHaveLength(1);
-            expect(divHeadPerms[0].module).toBe('CONTRACTS');
-            expect(divHeadPerms[0].canDelete).toBe(true);
+            expect(divHeadPerms).toHaveLength(4);
+            const contractsPerm = divHeadPerms.find((p) => p.module === 'CONTRACTS');
+            expect(contractsPerm?.canDelete).toBe(true);
+            const powerPerm = divHeadPerms.find((p) => p.module === 'POWER_CONTRACTS');
+            expect(powerPerm?.canView).toBe(false);
 
             const editorPerms = buildDefaultPermissionsForRole(UserRole.EDITOR, Division.POWER_CONTRACTS);
-            expect(editorPerms).toHaveLength(1);
-            expect(editorPerms[0].module).toBe('POWER_CONTRACTS');
-            expect(editorPerms[0].canEdit).toBe(true);
-            expect(editorPerms[0].canDelete).toBe(false);
+            expect(editorPerms).toHaveLength(4);
+            const powerEditorPerm = editorPerms.find((p) => p.module === 'POWER_CONTRACTS');
+            expect(powerEditorPerm?.canEdit).toBe(true);
+            expect(powerEditorPerm?.canDelete).toBe(false);
+            const legalEditorPerm = editorPerms.find((p) => p.module === 'LEGAL_DOCUMENTS');
+            expect(legalEditorPerm?.canView).toBe(false);
         });
 
         it('should correctly calculate getPermissionsByModule', () => {

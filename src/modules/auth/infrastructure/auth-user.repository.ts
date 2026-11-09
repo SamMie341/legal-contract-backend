@@ -62,7 +62,7 @@ export class AuthUserRepository implements IAuthUserRepository {
 
     async createSyncedEmployee(data: {
         empCode: string;
-        email: string;
+        email?: string | null;
         fullName: string;
         department: string;
         division: string;
@@ -72,11 +72,12 @@ export class AuthUserRepository implements IAuthUserRepository {
         passwordHash: string;
         role: UserRole;
     }): Promise<User> {
+        const normalizedEmail = (data.email && typeof data.email === 'string') ? data.email.trim() || null : null;
         return this.prisma.user.create({
             data: {
                 employeeCode: data.empCode,
                 username: data.empCode,
-                email: data.email,
+                email: normalizedEmail,
                 passwordHash: data.passwordHash,
                 fullName: data.fullName,
                 department: data.department,
@@ -98,6 +99,7 @@ export class AuthUserRepository implements IAuthUserRepository {
     }
 
     async upsertHrmUser(data: any): Promise<any> {
+        const normalizedEmail = (data.email && typeof data.email === 'string') ? data.email.trim() || null : null;
         return this.prisma.user.upsert({
             where: { employeeCode: data.empCode },
             update: {
@@ -106,7 +108,7 @@ export class AuthUserRepository implements IAuthUserRepository {
                 division: data.division,
                 unit: data.unit,
                 position: data.position,
-                email: data.email,
+                email: normalizedEmail,
                 phone: data.phone,
                 passwordHash: data.passwordHash,
                 lastLoginAt: new Date(),
@@ -114,7 +116,7 @@ export class AuthUserRepository implements IAuthUserRepository {
             create: {
                 employeeCode: data.empCode,
                 username: data.empCode,
-                email: data.email,
+                email: normalizedEmail,
                 passwordHash: data.passwordHash,
                 fullName: data.fullName,
                 department: data.department,

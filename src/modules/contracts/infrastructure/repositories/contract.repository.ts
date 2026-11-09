@@ -265,6 +265,11 @@ export class ContractRepository implements IContractRepository {
                 },
             });
 
+            // ລົບການແຈ້ງເຕືອນສັນຍານີ້ອອກເພື່ອບໍ່ໃຫ້ຄ້າງໃນ Notification center
+            await tx.contractNotification.deleteMany({
+                where: { contractId: id },
+            });
+
             await tx.auditLog.create({
                 data: {
                     userId: userId,

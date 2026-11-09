@@ -2,9 +2,16 @@
 ## Frontend Integration Guide: Dynamic RBAC & 3 Core Modules Permission Matrix
 
 > **ລະບົບ:** Legal Contract Management System (EDL - ຟຟລ)  
-> **ເວີຊັນ:** 2.0 (Dynamic Custom Roles & 3 Core Modules RBAC)  
-> **ວັນທີປັບປຸງ:** 02/11/2026  
+> **ເວີຊັນ:** 2.2 (Nullable Email Support, Division Head Boundary Safeguards & Full API Response Payloads)  
+> **ວັນທີປັບປຸງ:** 09/11/2026  
 > **ສະຖານະ Backend:** ພ້ອມໃຊ້ງານ (Deployed & Verified 100%)
+
+> [!IMPORTANT]
+> **🚨 ຈຸດປັບປຸງລ່າສຸດ (Latest Updates - 09/11/2026):**
+> 1. **ຮອງຮັບ `email: null` (Nullable Email):** ປັດຈຸບັນພະນັກງານທີ່ບໍ່ມີອີເມວໃນ HRM ຫຼື ບໍ່ໄດ້ປ້ອນອີເມວມາ (ເຊັ່ນ ພະນັກງານລະຫັດ `43597`), ຖານຂໍ້ມູນ ແລະ API ຈະບັນທຶກ ແລະ ສົ່ງຄ່າເປັນ `null` ໄດ້ຢ່າງປອດໄພ (ບໍ່ຕິດ Unique Constraint `users_email_key` ອີກຕໍ່ໄປ). ຟອມ Frontend ສາມາດປ່ອຍຫວ່າງ `email` ໄດ້ ແລະ Backend ຈະແປງ `""` ໃຫ້ເປັນ `null` ອັດຕະໂນມັດ.
+> 2. **ປັບປຸງ HRM Lookup (`GET /api/users/hrm/:empCode`):** ຫາກ HRM ບໍ່ມີອີເມວ ຈະສົ່ງ `email: null` (ບໍ່ສ້າງອີເມວສົມມຸດ).
+> 3. **ແນບຕົວຢ່າງ API Response Payloads ຄົບຊຸດ:** ເພີ່ມຕົວຢ່າງ JSON ຕົວຈິງຄົບທຸກ Endpoint ສຳລັບການຈັດການ Users (`GET /hrm/:empCode`, `POST /users`, `PATCH /users/:id`, `GET /users`, `GET /users/:id`, `GET /audit-logs`).
+> 4. **ລະບົບກວດສອບຂອບເຂດສິດ ຫົວໜ້າພະແນກ (DIVISION_HEAD):** ຫົວໜ້າພະແນກຈະຈັດການໄດ້ສະເພາະພະນັກງານໃນພະແນກ ແລະ ຝ່າຍ ຂອງຕົນເອງ, ຖືກຕັດ Role `ADMIN` ແລະ `DEPARTMENT_HEAD` ອອກຈາກ Dropdown, ແລະ ບໍ່ສາມາດກຳນົດສິດໂມດູນນອກພະແນກຕົນເອງໄດ້.
 
 ---
 
@@ -15,9 +22,17 @@
 4. [ການປັບປຸງ Sidebar, Navigation & Route Guard](#4-ການປັບປຸງ-sidebar-navigation--route-guard)
 5. [ການຄວບຄຸມປຸ່ມ Action (Button-Level Permissions)](#5-ການຄວບຄຸມປຸ່ມ-action-button-level-permissions)
 6. [ໜ້າໃໝ່: ການຈັດການບົດບາດ (Roles Management UI: `/roles`)](#6-ໜ້າໃໝ່-ການຈັດການບົດບາດ-roles-management-ui-roles)
-7. [ການປັບປຸງໜ້າຈັດການຜູ້ໃຊ້ (User Management UI: `/users`)](#7-ການປັບປຸງໜ້າຈັດການຜູ້ໃຊ້-user-management-ui-users)
+7. [ການປັບປຸງໜ້າຈັດການຜູ້ໃຊ້ (User Management UI: `/users` - Admin & Division Head)](#7-ການປັບປຸງໜ້າຈັດການຜູ້ໃຊ້-user-management-ui-users---admin--division-head)
+   - 7.1 [ການກວດສອບ Auto-fill ຈາກ HRM (`GET /api/users/hrm/:empCode`) ພ້ອມ Nullable Email](#71-ການກວດສອບ-auto-fill-ຈາກ-hrm-get-apiusershrmempcode-ພ້ອມ-nullable-email)
+   - 7.2 [Dropdown ເລືອກ Role (Dynamic Roles & Division Head Filtering)](#72-dropdown-ເລືອກ-role-dynamic-roles--division-head-filtering)
+   - 7.3 [API ສ້າງ User ໃໝ່ (`POST /api/users`) ພ້ອມ Response Payload](#73-api-ສ້າງ-user-ໃໝ່-post-apiusers-ພ້ອມ-response-payload)
+   - 7.4 [API ແກ້ໄຂ User (`PATCH /api/users/:id`) ພ້ອມ Response Payload](#74-api-ແກ້ໄຂ-user-patch-apiusersid-ພ້ອມ-response-payload)
+   - 7.5 [API ດຶງລາຍຊື່ ແລະ ລາຍລະອຽດ User (`GET /api/users` & `GET /api/users/:id`)](#75-api-ດຶງລາຍຊື່-ແລະ-ລາຍລະອຽດ-user-get-apiusers--get-apiusersid)
+   - 7.6 [Audit Logs ສຳລັບ User Management (`GET /api/audit-logs`) ພ້ອມ Target User](#76-audit-logs-ສຳລັບ-user-management-get-apiaudit-logs-ພ້ອມ-target-user)
+   - 7.7 [ການຈັດການ Error Codes ສະເພາະໜ້າ Users (409 Conflict & 403 Forbidden)](#77-ການຈັດການ-error-codes-ສະເພາະໜ້າ-users-409-conflict--403-forbidden)
 8. [ຕົວຢ່າງ TypeScript Interfaces & Code Examples](#8-ຕົວຢ່າງ-typescript-interfaces--code-examples)
 9. [ການຈັດການ Error Codes ຈາກ Backend](#9-ການຈັດການ-error-codes-ຈາກ-backend)
+10. [ສິ່ງທີ່ Frontend ສາມາດທົດສອບໄດ້ທັນທີຜ່ານ Postman](#10-ສິ່ງທີ່-frontend-ສາມາດທົດສອບໄດ້ທັນທີຜ່ານ-postman)
 
 ---
 
@@ -66,6 +81,8 @@ graph TD
   "user": {
     "id": "1d6580b1-781a-45a6-83ac-203f66c3c04a",
     "employeeCode": "EDL-44652",
+    "username": "EDL-44652",
+    "email": "somsak@edl.com.la",
     "fullName": "ສົມສັກ ສີສຸວັນ",
     "department": "ຫ້ອງການສຳນັກງານໃຫຍ່",
     "division": "ພະແນກສັນຍາທົ່ວໄປ",
@@ -178,6 +195,12 @@ const canSeeLegalAndDispute = user.permissionsByModule?.LEGAL_AND_DISPUTE?.canVi
 
 // ເມນູ Admin Only (ຈັດການລະບົບ)
 const isAdmin = user.role === 'ADMIN';
+
+// ເມນູ ຈັດການຜູ້ໃຊ້ (User Management: /users): Admin ຫຼື ຫົວໜ້າພະແນກ (Division Head)
+const canManageUsers = 
+  user.role === 'ADMIN' || 
+  user.role === 'DIVISION_HEAD' || 
+  user.accessibleModules?.includes('users');
 ```
 
 ### 4.2 Route Guard ຝັ່ງ Frontend
@@ -286,26 +309,123 @@ Frontend ສາມາດສົ່ງ Payload ດ້ວຍ key 3 ໂມດູນ 
 
 ---
 
-## 7. ການປັບປຸງໜ້າຈັດການຜູ້ໃຊ້ (User Management UI: `/users`)
+## 7. ການປັບປຸງໜ້າຈັດການຜູ້ໃຊ້ (User Management UI: `/users` - Admin & Division Head)
 
-### 7.1 Dropdown ເລືອກ Role
+ໜ້າຈັດການຜູ້ໃຊ້ຮອງຮັບ 2 ບົດບາດຫຼັກ:
+* **`ADMIN`**: ຈັດການຜູ້ໃຊ້ໄດ້ທຸກພະແນກ ແລະ ທຸກ Role (ລວມທັງ Soft Delete ແລະ Reset Password)
+* **`DIVISION_HEAD` (ຫົວໜ້າພະແນກ)**: ເພີ່ມ, ແກ້ໄຂ ແລະ ເບິ່ງລາຍຊື່ຜູ້ໃຊ້ໄດ້ **ສະເພາະພະແນກ ແລະ ຝ່າຍ ຂອງຕົນເອງເທົ່ານັ້ນ**
+
+---
+
+### 7.1 ການກວດສອບ Auto-fill ຈາກ HRM (`GET /api/users/hrm/:empCode`) ພ້ອມ Nullable Email
+ເມື່ອກົດຄົ້ນຫາລະຫັດພະນັກງານ, Backend ຈະກວດສອບພະແນກ ແລະ ຝ່າຍ ອັດຕະໂນມັດ ພ້ອມສົ່ງ Flag ມາໃຫ້ Frontend:
+
+#### Interface ຂອງ HrmLookupResponse:
+```typescript
+interface HrmLookupResponse {
+  message: string;
+  data: {
+    employeeCode: string;
+    fullName: string;
+    department: string;
+    division: string;
+    unit: string;
+    position: string;
+    email: string | null;              // ✨ Nullable: null ຫາກ HRM ບໍ່ມີອີເມວ
+    phone: string;
+    alreadyInSystem: boolean;
+    isSameDivision: boolean;           // true ຫາກຢູ່ພະແນກດຽວກັນກັບຜູ້ກວດສອບ
+    canAdd: boolean;                   // true ຫາກສາມາດເພີ່ມເຂົ້າລະບົບໄດ້
+    divisionMismatchWarning: string | null; // ຂໍ້ຄວາມແຈ້ງເຕືອນພາສາລາວ ເມື່ອຢູ່ຕ່າງພະແນກ
+  };
+}
+```
+
+#### ຕົວຢ່າງ API Response 1: ພະນັກງານທີ່ "ບໍ່ມີອີເມວ" ໃນ HRM (ເຊັ່ນ ລະຫັດ 43597)
+> [!NOTE]
+> ຫາກ HRM ບໍ່ມີຂໍ້ມູນອີເມວ, Backend ຈະສົ່ງ `email: null` ກັບຄືນມາ:
+
+```json
+// GET /api/users/hrm/43597 -> HTTP 200 OK
+{
+  "message": "ດຶງຂໍ້ມູນພະນັກງານຈາກ HRM ສຳເລັດ",
+  "data": {
+    "employeeCode": "43597",
+    "fullName": "ບຸນທະວີ ກຳມະວົງສາ",
+    "department": "ຝ່າຍກົດໝາຍ-ສັນຍາ",
+    "division": "ພະແນກສັນຍາທົ່ວໄປ (ຝກສ)",
+    "unit": "",
+    "position": "ຮອງຫົວໜ້າພະແນກ",
+    "email": null,
+    "phone": "02078080118",
+    "alreadyInSystem": false,
+    "isSameDivision": true,
+    "canAdd": true,
+    "divisionMismatchWarning": null
+  }
+}
+```
+
+#### ຕົວຢ່າງ API Response 2: ພະນັກງານທີ່ "ມີອີເມວ" ປົກກະຕິ (ເຊັ່ນ ລະຫັດ 44404)
+```json
+// GET /api/users/hrm/44404 -> HTTP 200 OK
+{
+  "message": "ດຶງຂໍ້ມູນພະນັກງານຈາກ HRM ສຳເລັດ",
+  "data": {
+    "employeeCode": "44404",
+    "fullName": "ພົງພະສິດ ສຸກໃສ",
+    "department": "ຝ່າຍກົດໝາຍ-ສັນຍາ",
+    "division": "ພະແນກສັນຍາທົ່ວໄປ (ຝກສ)",
+    "unit": "",
+    "position": "ວິຊາການ",
+    "email": "sphongphasith@gmail.com",
+    "phone": "02055555555",
+    "alreadyInSystem": true,
+    "isSameDivision": true,
+    "canAdd": false,
+    "divisionMismatchWarning": null
+  }
+}
+```
+
+> [!TIP]
+> **ຄຳແນະນຳສຳລັບ Form ຝັ່ງ Frontend:**
+> 1. ຊ່ອງກອກ **ອີເມວ (Email)** ໃນ Form ເພີ່ມຜູ້ໃຊ້ ໃຫ້ຕັ້ງເປັນ **Optional** (ບໍ່ຕ້ອງບັງຄັບ Required).
+> 2. ເມື່ອກົດຄົ້ນຫາແລ້ວ `data.email` ເປັນ `null`, ໃຫ້ສະແດງຊ່ອງ Email ເປັນຄ່າຫວ່າງ `""`.
+> 3. ຫາກ User ບໍ່ໄດ້ກອກອີເມວເພີ່ມເຕີມ Frontend ສາມາດສົ່ງ `null` ຫຼື `""` ຫຼື ບໍ່ສົ່ງຟິວ `email` ໄປໃນ Payload ໄດ້ເລີຍ Backend ຈະບັນທຶກເປັນ `null` ອັດຕະໂນມັດ ໂດຍບໍ່ເກີດ Error Unique Constraint.
+> 4. ຫາກ `canAdd === false`:
+>    - ຖ້າ `alreadyInSystem === true`: ສະແດງ Alert: *"ພະນັກງານລະຫັດນີ້ມີໃນລະບົບແລ້ວ"* ແລະ Disable ປຸ່ມ Save.
+>    - ຖ້າ `divisionMismatchWarning` ບໍ່ເປັນ null: ສະແດງ Alert ສີແດງດ້ວຍຂໍ້ຄວາມຈາກ Backend ແລະ Disable ປຸ່ມ Save.
+
+---
+
+### 7.2 Dropdown ເລືອກ Role (Dynamic Roles & Division Head Filtering)
 * ປ່ຽນ Dropdown ເລືອກ Role ຈາກ Hardcoded Enum ເປັນ **Dropdown ດຶງຂໍ້ມູນມາຈາກ `GET /api/roles`**.
+* **ກໍລະນີຜູ້ Login ເປັນ `DIVISION_HEAD`:** ໃຫ້ **Filter ຕັດ Role `ADMIN` ແລະ `DEPARTMENT_HEAD` ອອກຈາກ Dropdown** (ອະນຸຍາດໃຫ້ເລືອກສະເພາະ `MAIN_USER`, `EDITOR`, `VIEWER`).
 * ເມື່ອເລືອກ Role ໃດໜຶ່ງ ໃຫ້ສົ່ງ **`roleId`** ໄປໃນ Payload.
 
-### 7.2 Payload ສ້າງ User (`POST /api/users`):
+---
+
+### 7.3 API ສ້າງ User ໃໝ່ (`POST /api/users`) ພ້ອມ Response Payload
+
+#### Request Payload:
 ```json
+// POST /api/users
 {
-  "employeeCode": "EDL-44652",
+  "employeeCode": "43597",
   "roleId": "94029266-d1a0-4c2c-b1df-c51e8b3ea626",
-  "division": "ພະແນກສັນຍາທົ່ວໄປ",
-  "department": "ຫ້ອງການສຳນັກງານໃຫຍ່",
+  "division": "ພະແນກສັນຍາທົ່ວໄປ (ຝກສ)",
+  "department": "ຝ່າຍກົດໝາຍ-ສັນຍາ",
+  "email": null,
+  "phone": "02078080118",
+  "fullName": "ບຸນທະວີ ກຳມະວົງສາ",
   "modulePermissions": [
     {
       "module": "CONTRACTS",
       "canView": true,
       "canUpload": true,
       "canEdit": true,
-      "canDelete": true,
+      "canDelete": false,
       "canDownload": true
     }
   ]
@@ -313,7 +433,379 @@ Frontend ສາມາດສົ່ງ Payload ດ້ວຍ key 3 ໂມດູນ 
 ```
 
 > [!NOTE]
-> ຟິວ `modulePermissions` ໃນໜ້າ Users ເປັນ Option ສຳລັບ **User-Specific Override** (ສິດພິເສດສະເພາະບຸກຄົນ). ຫາກບໍ່ມີການກຳນົດ override, ຜູ້ໃຊ້ຈະໄດ້ຮັບສິດຕາມ Role Matrix ຂອງ `roleId` ທີ່ເລືອກໂດຍອັດຕະໂນມັດ.
+> * ຟິວ `email` ສາມາດສົ່ງເປັນ `null`, `""` ຫຼື ລະເວັ້ນ (Omit) ໄດ້.
+> * ຟິວ `modulePermissions` ເປັນ Option (ຫາກບໍ່ໃສ່ມາ ຈະໄດ້ຮັບສິດຕາມ Role ທີ່ເລືອກ).
+> * ລະຫັດຜ່ານຕັ້ງຕົ້ນ (Default Password) ຂອງຜູ້ໃຊ້ໃໝ່ຈະຖືກຕັ້ງເປັນ: `EDL@{employeeCode}` (ເຊັ່ນ: `EDL@43597`).
+
+#### API Response Payload ຕົວຈິງ (HTTP 201 Created):
+```json
+{
+  "message": "ເພີ່ມຜູ້ໃຊ້ໂດຍການ Sync ຂໍ້ມູນຈາກ HRM ສຳເລັດ",
+  "data": {
+    "id": "e8b09b53-ec52-4740-8ea7-a7ebf93282eb",
+    "employeeCode": "43597",
+    "username": "43597",
+    "email": null,
+    "fullName": "ບຸນທະວີ ກຳມະວົງສາ",
+    "department": "ຝ່າຍກົດໝາຍ-ສັນຍາ",
+    "division": "ພະແນກສັນຍາທົ່ວໄປ (ຝກສ)",
+    "unit": "",
+    "position": "ຮອງຫົວໜ້າພະແນກ",
+    "phone": "02078080118",
+    "role": "MAIN_USER",
+    "roleId": "94029266-d1a0-4c2c-b1df-c51e8b3ea626",
+    "roleRef": {
+      "id": "94029266-d1a0-4c2c-b1df-c51e8b3ea626",
+      "name": "MAIN_USER",
+      "title": "ຜູ້ໃຊ້ຫຼັກປະຈຳພະແນກ",
+      "isSystem": true,
+      "permissions": []
+    },
+    "canView": true,
+    "canUpload": true,
+    "canEdit": true,
+    "canDelete": false,
+    "canDownload": true,
+    "isActive": true,
+    "createdAt": "2026-11-09T10:15:51.000Z",
+    "modulePermissions": [
+      {
+        "module": "CONTRACTS",
+        "canView": true,
+        "canUpload": true,
+        "canEdit": true,
+        "canDelete": false,
+        "canDownload": true
+      }
+    ]
+  }
+}
+```
+
+---
+
+### 7.4 API ແກ້ໄຂ User (`PATCH /api/users/:id`) ພ້ອມ Response Payload
+
+#### Request Payload:
+```json
+// PATCH /api/users/e8b09b53-ec52-4740-8ea7-a7ebf93282eb
+{
+  "roleId": "33def50d-ba6f-41b3-823d-1357684ecf56",
+  "isActive": true,
+  "canView": true,
+  "canUpload": true,
+  "canEdit": true,
+  "canDelete": false,
+  "canDownload": true,
+  "modulePermissions": [
+    {
+      "module": "CONTRACTS",
+      "canView": true,
+      "canUpload": true,
+      "canEdit": true,
+      "canDelete": false,
+      "canDownload": true
+    }
+  ]
+}
+```
+
+#### API Response Payload ຕົວຈິງ (HTTP 200 OK):
+```json
+{
+  "message": "ອັບເດດຂໍ້ມູນຜູ້ໃຊ້ສຳເລັດ",
+  "data": {
+    "id": "e8b09b53-ec52-4740-8ea7-a7ebf93282eb",
+    "employeeCode": "43597",
+    "username": "43597",
+    "email": null,
+    "fullName": "ບຸນທະວີ ກຳມະວົງສາ",
+    "department": "ຝ່າຍກົດໝາຍ-ສັນຍາ",
+    "division": "ພະແນກສັນຍາທົ່ວໄປ (ຝກສ)",
+    "unit": "",
+    "position": "ຮອງຫົວໜ້າພະແນກ",
+    "phone": "02078080118",
+    "role": "MAIN_USER",
+    "roleId": "33def50d-ba6f-41b3-823d-1357684ecf56",
+    "roleRef": {
+      "id": "33def50d-ba6f-41b3-823d-1357684ecf56",
+      "name": "MAIN_USER",
+      "title": "ຜູ້ໃຊ້ຫຼັກປະຈຳພະແນກ",
+      "isSystem": true,
+      "permissions": []
+    },
+    "canView": true,
+    "canUpload": true,
+    "canEdit": true,
+    "canDelete": false,
+    "canDownload": true,
+    "isActive": true,
+    "lastLoginAt": null,
+    "createdAt": "2026-11-09T10:15:51.000Z",
+    "updatedAt": "2026-11-09T10:20:00.000Z",
+    "modulePermissions": [
+      {
+        "module": "CONTRACTS",
+        "canView": true,
+        "canUpload": true,
+        "canEdit": true,
+        "canDelete": false,
+        "canDownload": true
+      }
+    ]
+  }
+}
+```
+
+---
+
+### 7.5 API ດຶງລາຍຊື່ ແລະ ລາຍລະອຽດ User (`GET /api/users` & `GET /api/users/:id`)
+
+#### 1. ດຶງລາຍຊື່ຜູ້ໃຊ້ທັງໝົດ (`GET /api/users`)
+* **Query Parameters ທີ່ຮອງຮັບ:**
+  * `page` (default: 1)
+  * `limit` (default: 10)
+  * `search` (ຄົ້ນຫາຊື່ເຕັມ, ລະຫັດພະນັກງານ, username, email)
+  * `role` (Filter ຕາມ Role: ADMIN, DIVISION_HEAD, MAIN_USER, EDITOR, VIEWER)
+  * `isActive` (Filter: `true` ຫຼື `false`)
+  * `division` (ສະເພາະ Admin: ສາມາດກັ່ນຕອງຕາມພະແນກໄດ້)
+  * `department` (ສະເພາະ Admin: ສາມາດກັ່ນຕອງຕາມຝ່າຍໄດ້)
+
+> [!NOTE]
+> ສຳລັບ `DIVISION_HEAD` (ຫົວໜ້າພະແນກ), Backend ຈະບັງຄັບກັ່ນຕອງໃຫ້ເຫັນສະເພາະ User ທີ່ຢູ່ໃນ `division` ຂອງຕົນເອງໂດຍອັດຕະໂນມັດ ເຖິງແມ່ນວ່າຈະບໍ່ໄດ້ສົ່ງ query param ມາກໍຕາມ.
+
+#### API Response Payload ຕົວຈິງ (`GET /api/users` - HTTP 200 OK):
+```json
+{
+  "data": [
+    {
+      "id": "c5a7dda4-0326-4395-80ac-ebaf32bea668",
+      "employeeCode": "ADMIN-001",
+      "username": "admin",
+      "email": "admin@edl.com.la",
+      "fullName": "System Administrator",
+      "department": "ຫ້ອງການສຳນັກງານໃຫຍ່",
+      "division": "ພະແນກສັນຍາທົ່ວໄປ",
+      "unit": "ໜ່ວຍງານບໍລິຫານ",
+      "position": "ຜູ້ດູແລລະບົບ",
+      "phone": "02099999999",
+      "role": "ADMIN",
+      "roleId": null,
+      "roleRef": null,
+      "canView": true,
+      "canUpload": true,
+      "canEdit": true,
+      "canDelete": true,
+      "canDownload": true,
+      "isActive": true,
+      "lastLoginAt": "2026-11-09T09:00:00.000Z",
+      "createdAt": "2026-10-20T02:30:20.000Z",
+      "modulePermissions": []
+    },
+    {
+      "id": "e8b09b53-ec52-4740-8ea7-a7ebf93282eb",
+      "employeeCode": "43597",
+      "username": "43597",
+      "email": null,
+      "fullName": "ບຸນທະວີ ກຳມະວົງສາ",
+      "department": "ຝ່າຍກົດໝາຍ-ສັນຍາ",
+      "division": "ພະແນກສັນຍາທົ່ວໄປ (ຝກສ)",
+      "unit": "",
+      "position": "ຮອງຫົວໜ້າພະແນກ",
+      "phone": "02078080118",
+      "role": "MAIN_USER",
+      "roleId": "94029266-d1a0-4c2c-b1df-c51e8b3ea626",
+      "roleRef": {
+        "id": "94029266-d1a0-4c2c-b1df-c51e8b3ea626",
+        "name": "MAIN_USER",
+        "title": "ຜູ້ໃຊ້ຫຼັກປະຈຳພະແນກ",
+        "isSystem": true,
+        "permissions": []
+      },
+      "canView": true,
+      "canUpload": true,
+      "canEdit": true,
+      "canDelete": false,
+      "canDownload": true,
+      "isActive": true,
+      "lastLoginAt": null,
+      "createdAt": "2026-11-09T10:15:51.000Z",
+      "modulePermissions": [
+        {
+          "module": "CONTRACTS",
+          "canView": true,
+          "canUpload": true,
+          "canEdit": true,
+          "canDelete": false,
+          "canDownload": true
+        }
+      ]
+    }
+  ],
+  "total": 6,
+  "page": 1,
+  "limit": 10,
+  "totalPages": 1
+}
+```
+
+#### 2. ດຶງຂໍ້ມູນລາຍລະອຽດຜູ້ໃຊ້ຕາມ ID (`GET /api/users/:id`)
+#### API Response Payload ຕົວຈິງ (`GET /api/users/:id` - HTTP 200 OK):
+```json
+{
+  "id": "e8b09b53-ec52-4740-8ea7-a7ebf93282eb",
+  "employeeCode": "43597",
+  "username": "43597",
+  "email": null,
+  "fullName": "ບຸນທະວີ ກຳມະວົງສາ",
+  "department": "ຝ່າຍກົດໝາຍ-ສັນຍາ",
+  "division": "ພະແນກສັນຍາທົ່ວໄປ (ຝກສ)",
+  "unit": "",
+  "position": "ຮອງຫົວໜ້າພະແນກ",
+  "phone": "02078080118",
+  "role": "MAIN_USER",
+  "canView": true,
+  "canUpload": true,
+  "canEdit": true,
+  "canDelete": false,
+  "canDownload": true,
+  "isActive": true,
+  "lastLoginAt": null,
+  "createdAt": "2026-11-09T10:15:51.000Z",
+  "updatedAt": "2026-11-09T10:20:00.000Z",
+  "modulePermissions": [
+    {
+      "module": "CONTRACTS",
+      "canView": true,
+      "canUpload": true,
+      "canEdit": true,
+      "canDelete": false,
+      "canDownload": true
+    }
+  ],
+  "_count": {
+    "createdContracts": 0,
+    "uploadedAttachments": 0,
+    "downloadLogs": 0
+  }
+}
+```
+
+---
+
+### 7.6 Audit Logs ສຳລັບ User Management (`GET /api/audit-logs`) ພ້ອມ Target User
+ທຸກການກະທຳກ່ຽວກັບຜູ້ໃຊ້ (ສ້າງ User, ແກ້ໄຂ Role, ແກ້ໄຂສິດ Matrix, ເປີດ/ປິດ ບັນຊີ, Soft Delete, Reset Password), Backend ຈະບັນທຶກ Audit Log ອັດຕະໂນມັດພ້ອມຜູກ Relation **`targetUser`** (ຜູ້ຖືກກະທຳ):
+
+#### API Request:
+```http
+GET /api/audit-logs?targetUserId=e8b09b53-ec52-4740-8ea7-a7ebf93282eb&action=USER_PERMISSION_CHANGE&page=1&limit=10
+```
+
+#### API Response Payload ຕົວຈິງ (HTTP 200 OK):
+```json
+{
+  "data": [
+    {
+      "id": "9f3c1782-9653-4dc9-9833-2ba393a74da4",
+      "action": "USER_PERMISSION_CHANGE",
+      "entityId": null,
+      "details": null,
+      "ipAddress": "127.0.0.1",
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "timestamp": "2026-11-09T10:15:51.000Z",
+      "user": {
+        "id": "c5a7dda4-0326-4395-80ac-ebaf32bea668",
+        "fullName": "System Administrator",
+        "username": "admin",
+        "employeeCode": "ADMIN-001"
+      },
+      "targetUser": {
+        "id": "e8b09b53-ec52-4740-8ea7-a7ebf93282eb",
+        "fullName": "ບຸນທະວີ ກຳມະວົງສາ",
+        "username": "43597",
+        "employeeCode": "43597"
+      },
+      "newValues": {
+        "action": "CREATE_USER",
+        "targetUser": {
+          "id": "e8b09b53-ec52-4740-8ea7-a7ebf93282eb",
+          "employeeCode": "43597",
+          "username": "43597",
+          "fullName": "ບຸນທະວີ ກຳມະວົງສາ",
+          "department": "ຝ່າຍກົດໝາຍ-ສັນຍາ",
+          "division": "ພະແນກສັນຍາທົ່ວໄປ (ຝກສ)",
+          "role": "MAIN_USER",
+          "roleId": "94029266-d1a0-4c2c-b1df-c51e8b3ea626",
+          "isActive": true
+        },
+        "permissions": {
+          "canView": true,
+          "canUpload": true,
+          "canEdit": true,
+          "canDelete": false,
+          "canDownload": true,
+          "modulePermissions": [
+            {
+              "module": "CONTRACTS",
+              "canView": true,
+              "canUpload": true,
+              "canEdit": true,
+              "canDelete": false,
+              "canDownload": true
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "total": 1,
+  "page": 1,
+  "limit": 10,
+  "totalPages": 1
+}
+```
+
+---
+
+### 7.7 ການຈັດການ Error Codes ສະເພາະໜ້າ Users (409 Conflict & 403 Forbidden)
+
+#### 1. ກໍລະນີພະນັກງານມີໃນລະບົບແລ້ວ (HTTP 409 Conflict):
+```json
+{
+  "statusCode": 409,
+  "message": "ພະນັກງານລະຫັດ 43597 ມີໃນລະບົບແລ້ວ",
+  "error": "Conflict"
+}
+```
+* **Frontend Action:** ສະແດງ Toast / Alert ສີແດງ: *"ພະນັກງານລະຫັດນີ້ມີບັນຊີໃນລະບົບແລ້ວ ບໍ່ສາມາດເພີ່ມຊ້ຳໄດ້"*.
+
+#### 2. ກໍລະນີຫົວໜ້າພະແນກພະຍາຍາມເພີ່ມພະນັກງານຕ່າງພະແນກ (HTTP 403 Forbidden):
+```json
+{
+  "statusCode": 403,
+  "message": "ທ່ານບໍ່ມີສິດເພີ່ມພະນັກງານຕ່າງພະແນກ (ພະນັກງານລະຫັດ \"43597\" ສັງກັດພະແນກ: \"ພະແນກສັນຍາຊື້-ຂາຍໄຟຟ້າ\", ຝ່າຍ: \"ຝ່າຍກົດໝາຍ-ສັນຍາ\" ແຕ່ທ່ານສັງກັດພະແນກ: \"ພະແນກສັນຍາທົ່ວໄປ\")",
+  "error": "Forbidden"
+}
+```
+* **Frontend Action:** ສະແດງ Modal ຫຼື Banner ແຈ້ງເຕືອນສີແດງຕາມ `message` ທີ່ Backend ສົ່ງມາ.
+
+#### 3. ກໍລະນີຫົວໜ້າພະແນກພະຍາຍາມຕັ້ງ Role ເປັນ ADMIN ຫຼື DEPARTMENT_HEAD (HTTP 403 Forbidden):
+```json
+{
+  "statusCode": 403,
+  "message": "ຫົວໜ້າພະແນກ ບໍ່ສາມາດສ້າງ ຫຼື ກຳນົດບົດບາດ ADMIN ໄດ້ (ອະນຸຍາດສະເພາະ: MAIN_USER, EDITOR, VIEWER)",
+  "error": "Forbidden"
+}
+```
+
+#### 4. ກໍລະນີຫົວໜ້າພະແນກພະຍາຍາມກຳນົດສິດໂມດູນນອກພະແນກຕົນເອງ (HTTP 403 Forbidden):
+```json
+{
+  "statusCode": 403,
+  "message": "ຫົວໜ້າພະແນກ ບໍ່ສາມາດກຳນົດສິດໃນໂມດູນ \"POWER_CONTRACTS\" ທີ່ຢູ່ນອກພະແນກຂອງຕົນເອງໄດ້",
+  "error": "Forbidden"
+}
+```
 
 ---
 
@@ -345,6 +837,7 @@ export interface UserProfile {
   id: string;
   employeeCode: string;
   username: string;
+  email: string | null;
   fullName: string;
   department?: string;
   division?: string;
@@ -356,6 +849,92 @@ export interface UserProfile {
   roleTitle?: string;
   accessibleModules: string[];
   permissionsByModule: Record<SystemModuleKey, ModulePermission>;
+}
+
+/**
+ * Types ສຳລັບໜ້າ User Management (/users)
+ */
+export interface CreateUserPayload {
+  employeeCode: string;
+  roleId?: string;
+  role?: string;
+  division?: string;
+  department?: string;
+  fullName?: string;
+  email?: string | null;
+  phone?: string;
+  canView?: boolean;
+  canUpload?: boolean;
+  canEdit?: boolean;
+  canDelete?: boolean;
+  canDownload?: boolean;
+  modulePermissions?: Array<{
+    module: SystemModuleKey;
+    canView?: boolean;
+    canUpload?: boolean;
+    canEdit?: boolean;
+    canDelete?: boolean;
+    canDownload?: boolean;
+  }>;
+}
+
+export interface UpdateUserPayload {
+  roleId?: string;
+  role?: string;
+  division?: string;
+  department?: string;
+  isActive?: boolean;
+  canView?: boolean;
+  canUpload?: boolean;
+  canEdit?: boolean;
+  canDelete?: boolean;
+  canDownload?: boolean;
+  modulePermissions?: Array<{
+    module: SystemModuleKey;
+    canView?: boolean;
+    canUpload?: boolean;
+    canEdit?: boolean;
+    canDelete?: boolean;
+    canDownload?: boolean;
+  }>;
+}
+
+export interface UserListItem {
+  id: string;
+  employeeCode: string;
+  username: string;
+  email: string | null;
+  fullName: string;
+  department?: string;
+  division?: string;
+  unit?: string;
+  position?: string;
+  phone?: string;
+  role: string;
+  roleId?: string | null;
+  roleRef?: {
+    id: string;
+    name: string;
+    title: string;
+    isSystem: boolean;
+    permissions: any[];
+  } | null;
+  canView: boolean;
+  canUpload: boolean;
+  canEdit: boolean;
+  canDelete: boolean;
+  canDownload: boolean;
+  isActive: boolean;
+  lastLoginAt?: string | null;
+  createdAt: string;
+  modulePermissions: Array<{
+    module: string;
+    canView: boolean;
+    canUpload: boolean;
+    canEdit: boolean;
+    canDelete: boolean;
+    canDownload: boolean;
+  }>;
 }
 ```
 
@@ -433,8 +1012,9 @@ export function usePermissions(scopedModule?: SystemModuleKey) {
 | **`401 Unauthorized`** | **`TOKEN_OUTDATED`** | **ສິດທິ ຫຼື Role ຂອງ User ໄດ້ຮັບການປ່ຽນແປງ** (TokenVersion ບໍ່ກົງກັນ) | **Auto-Refresh ທັນທີ:** ດັກຈັບໃນ Axios Interceptor ແລ້ວຍິງໄປ `POST /api/auth/refresh` ດ້ວຍ `refreshToken` ເພື່ອຂໍ Token ໃໝ່ທີ່ບັນຈຸສິດລ່າສຸດ ໂດຍບໍ່ຕ້ອງ Logout! |
 | **`401 Unauthorized`** | `UNAUTHORIZED` | Token ໝົດອາຍຸ ຫຼື Refresh Token ບໍ່ຖືກຕ້ອງ | Clear LocalStorage/Cookie ແລ້ວ Redirect ໄປໜ້າ Login (`/login?expired=true`) |
 | **`403 Forbidden`** | `PATH_DIVISION_MISMATCH` | ຜູ້ໃຊ້ພະຍາຍາມປ່ຽນ Path URL ຂ້າມໄປໂມດູນທີ່ບໍ່ມີສິດ | ສະແດງ Alert / Modal: *"ທ່ານບໍ່ມີສິດເຂົ້າເຖິງໂມດູນນີ້"* ແລ້ວ Redirect ໄປ Dashboard |
-| **`403 Forbidden`** | `FORBIDDEN` | ບໍ່ມີສິດໃນການກະທຳ (ເຊັ່ນ: ບໍ່ມີສິດລົບ ຫຼື ດາວໂຫຼດ) | ສະແດງ Toast Notification ສີແດງ: ແຈ້ງເຕືອນບໍ່ມີສິດດຳເນີນການ |
-| **`400 Bad Request`** | `BAD_REQUEST` | ພະຍາຍາມລົບ System Role ຫຼື Role ທີ່ມີ User ຜູກຢູ່ | ສະແດງ Alert ແຈ້ງເຕືອນຂໍ້ຜິດພາດຕາມ `message` ຂອງ Backend |
+| **`403 Forbidden`** | `FORBIDDEN` | ບໍ່ມີສິດໃນການກະທຳ (ເຊັ່ນ: ບໍ່ມີສິດລົບ ຫຼື ດາວໂຫຼດ, ຫຼື ຫົວໜ້າພະແນກຈັດການຂ້າມພະແນກ) | ສະແດງ Toast Notification ສີແດງ: ແຈ້ງເຕືອນບໍ່ມີສິດດຳເນີນການ ຕາມ `message` ທີ່ໄດ້ຮັບ |
+| **`409 Conflict`** | `CONFLICT` | ພະນັກງານລະຫັດນີ້ມີບັນຊີໃນລະບົບແລ້ວ | ສະແດງ Toast / Alert ສີແດງ: *"ພະນັກງານລະຫັດນີ້ມີໃນລະບົບແລ້ວ"* |
+| **`400 Bad Request`** | `BAD_REQUEST` | ພະຍາຍາມລົບ System Role, Role ທີ່ມີ User ຜູກຢູ່ ຫຼື ຂໍ້ມູນບໍ່ຖືກຕ້ອງ | ສະແດງ Alert ແຈ້ງເຕືອນຂໍ້ຜິດພາດຕາມ `message` ຂອງ Backend |
 
 ---
 

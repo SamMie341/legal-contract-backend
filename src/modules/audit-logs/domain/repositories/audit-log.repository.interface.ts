@@ -20,6 +20,7 @@ export interface IAuditLogRepository {
         contractId?: string;
         powerContractId?: string;
         userId?: string;
+        targetUserId?: string;
         action?: AuditAction;
         actions?: AuditAction[];
         startDate?: string;

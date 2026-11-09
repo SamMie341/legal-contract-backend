@@ -275,6 +275,11 @@ export class PowerContractRepository implements IPowerContractRepository {
                 },
             });
 
+            // ລົບການແຈ້ງເຕືອນສັນຍານີ້ອອກເພື່ອບໍ່ໃຫ້ຄ້າງໃນ Notification center
+            await tx.powerContractNotification.deleteMany({
+                where: { powerContractId: id },
+            });
+
             await tx.auditLog.create({
                 data: {
                     userId,

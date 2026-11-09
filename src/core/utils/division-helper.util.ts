@@ -91,6 +91,68 @@ export const isLegalDocumentDivision = isLegalAndDisputeDivision;
 export const isDisputeResolutionDivision = isLegalAndDisputeDivision;
 
 /**
+ * ກວດສອບວ່າເປັນພະແນກດຽວກັນ ຫຼື ບໍ່ (Division Match)
+ * ປຽບທຽບທັງຊື່ໂດຍກົງ (Normalized Text) ແລະ Domain Category
+ */
+export function isSameDivision(
+    divisionA?: string | null,
+    divisionB?: string | null,
+): boolean {
+    if (!divisionA || !divisionB) return false;
+
+    const normA = normalizeLaoText(divisionA);
+    const normB = normalizeLaoText(divisionB);
+
+    if (!normA || !normB) return false;
+
+    // 1. Direct match after normalization
+    if (normA === normB) return true;
+
+    // 2. Domain category match (ກວດສອບວ່າຢູ່ໃນກຸ່ມວຽກງານດຽວກັນຫຼືບໍ່)
+    if (isPowerContractDivision(normA) && isPowerContractDivision(normB)) return true;
+    if (isGeneralContractDivision(normA) && isGeneralContractDivision(normB)) return true;
+    if (isLegalAndDisputeDivision(normA) && isLegalAndDisputeDivision(normB)) return true;
+
+    return false;
+}
+
+/**
+ * ກວດສອບວ່າເປັນຝ່າຍດຽວກັນ ຫຼື ບໍ່ (Department Match)
+ */
+export function isSameDepartment(
+    deptA?: string | null,
+    deptB?: string | null,
+): boolean {
+    // ຫາກຝ່າຍໃດຝ່າຍໜຶ່ງບໍ່ມີຂໍ້ມູນ ໃຫ້ຖືວ່າບໍ່ຂັດແຍ່ງ
+    if (!deptA || !deptB) return true;
+
+    const normA = normalizeLaoText(deptA);
+    const normB = normalizeLaoText(deptB);
+
+    if (!normA || !normB) return true;
+
+    return normA === normB || normA.includes(normB) || normB.includes(normA);
+}
+
+/**
+ * ກວດສອບວ່າຢູ່ພະແນກ ແລະ ຝ່າຍ ດຽວກັນ ຫຼື ບໍ່ (Composite Match)
+ */
+export function isSameDivisionAndDepartment(
+    actor: { division?: string | null; department?: string | null },
+    target: { division?: string | null; department?: string | null },
+): boolean {
+    if (!isSameDivision(actor.division, target.division)) {
+        return false;
+    }
+
+    if (actor.department && target.department) {
+        return isSameDepartment(actor.department, target.department);
+    }
+
+    return true;
+}
+
+/**
  * ສົ່ງຄືນໂມດູນຫຼັກເລີ່ມຕົ້ນຕາມພະແນກຕົ້ນສັງກັດ (Home Division Modules)
  */
 export function getDefaultModulesByDivision(division?: string | null): SystemModule[] {
@@ -178,14 +240,27 @@ export function buildDefaultPermissionsForRole(role?: UserRole | string | null, 
     const isFullManage = roleName === 'DIVISION_HEAD' || roleName === 'MAIN_USER';
     const isEditor = roleName === 'EDITOR';
 
-    return homeModules.map((module) => ({
-        module,
-        canView: true,
-        canUpload: isFullManage || isEditor,
-        canEdit: isFullManage || isEditor,
-        canDelete: isFullManage,
-        canDownload: isFullManage || isEditor,
-    }));
+    return allCore.map((module) => {
+        const isHome = homeModules.includes(module);
+        if (isHome) {
+            return {
+                module,
+                canView: true,
+                canUpload: isFullManage || isEditor,
+                canEdit: isFullManage || isEditor,
+                canDelete: isFullManage,
+                canDownload: isFullManage || isEditor,
+            };
+        }
+        return {
+            module,
+            canView: false,
+            canUpload: false,
+            canEdit: false,
+            canDelete: false,
+            canDownload: false,
+        };
+    });
 }
 
 /**
@@ -207,6 +282,12 @@ export function canAccessModule(
 
     // 2. ໂມດູນກາງທີ່ທຸກພະແນກໃຊ້ຮ່ວມກັນໄດ້ (Master Data / Dropdown / Support)
     if (module === SystemModule.DEPARTMENTS || module === SystemModule.SUPPORT) {
+        return true;
+    }
+
+    // 2.5. ໂມດູນຈັດການຜູ້ໃຊ້ (Users Module): ຫົວໜ້າພະແນກ (DIVISION_HEAD) ສາມາດເຂົ້າເຖິງເພື່ອຈັດການຜູ້ໃຊ້ໃນພະແນກຂອງຕົນ (ຍົກເວັ້ນສິດລົບ)
+    if (module === SystemModule.USERS && roleName === 'DIVISION_HEAD') {
+        if (action === 'canDelete') return false;
         return true;
     }
 
@@ -249,8 +330,25 @@ export function canAccessModule(
         }
     }
 
+    // ຄຳນວນວ່າເປັນ Home Division ຫຼື ບໍ່
+    let isHomeDivision = false;
+    if (module === SystemModule.CONTRACTS || module === SystemModule.CONTRACT_TYPES) {
+        isHomeDivision = isGeneralContractDivision(user.division);
+    } else if (module === SystemModule.POWER_CONTRACTS) {
+        isHomeDivision = isPowerContractDivision(user.division);
+    } else if (module === SystemModule.LEGAL_DOCUMENTS || module === SystemModule.LEGAL_CASES) {
+        isHomeDivision = isLegalAndDisputeDivision(user.division);
+    }
+
     // 5. ກວດສອບຈາກ Role-Level Matrix (user.roleRef.permissions ຈາກ Custom Role)
     if (user.roleRef?.permissions && user.roleRef.permissions.length > 0) {
+        // ສຳລັບ System Roles ປະຈຳພະແນກ (DIVISION_HEAD, MAIN_USER, EDITOR, VIEWER)
+        // ສິດຈາກ Role Matrix ຈະມີຜົນສະເພາະພາຍໃນ Home Division ຂອງຕົນເອງເທົ່ານັ້ນ (ຫ້າມຂ້າມພະແນກ)
+        const isDivisionScopedRole = ['DIVISION_HEAD', 'MAIN_USER', 'EDITOR', 'VIEWER'].includes(roleName);
+        if (isDivisionScopedRole && !isHomeDivision) {
+            return false;
+        }
+
         const rolePerm = user.roleRef.permissions.find((p) => {
             const k = String(p.module).toUpperCase().replace(/-/g, '_');
             return k === targetKey || (k === 'LEGAL_AND_DISPUTE' && (targetKey === 'LEGAL_DOCUMENTS' || targetKey === 'LEGAL_CASES'));
@@ -262,15 +360,6 @@ export function canAccessModule(
     }
 
     // 6. Fallback ກັບ Home Division ແລະ Legacy Flags (ຮອງຮັບຄວາມເຂົ້າກັນໄດ້ຍ້ອນຫຼັງ)
-    let isHomeDivision = false;
-    if (module === SystemModule.CONTRACTS || module === SystemModule.CONTRACT_TYPES) {
-        isHomeDivision = isGeneralContractDivision(user.division);
-    } else if (module === SystemModule.POWER_CONTRACTS) {
-        isHomeDivision = isPowerContractDivision(user.division);
-    } else if (module === SystemModule.LEGAL_DOCUMENTS || module === SystemModule.LEGAL_CASES) {
-        isHomeDivision = isLegalAndDisputeDivision(user.division);
-    }
-
     if (!isHomeDivision) {
         return false;
     }
@@ -318,6 +407,10 @@ export function getAccessibleModules(
 
     const modules = new Set<SystemModule>([SystemModule.DEPARTMENTS, SystemModule.SUPPORT]);
 
+    if (roleName === 'DIVISION_HEAD') {
+        modules.add(SystemModule.USERS);
+    }
+
     if (roleName === 'DEPARTMENT_HEAD') {
         modules.add(SystemModule.CONTRACTS);
         modules.add(SystemModule.CONTRACT_TYPES);
@@ -351,9 +444,15 @@ export function getAccessibleModules(
 
     // 2. Module Permissions ຈາກ Role
     if (user.roleRef?.permissions && user.roleRef.permissions.length > 0) {
+        const isDivisionScopedRole = ['DIVISION_HEAD', 'MAIN_USER', 'EDITOR', 'VIEWER'].includes(roleName);
         for (const p of user.roleRef.permissions) {
             if (p.canView !== false) {
                 const modKey = String(p.module).toUpperCase().replace(/-/g, '_');
+                if (isDivisionScopedRole) {
+                    if (modKey === 'CONTRACTS' && !isGeneralContractDivision(user.division)) continue;
+                    if (modKey === 'POWER_CONTRACTS' && !isPowerContractDivision(user.division)) continue;
+                    if ((modKey === 'LEGAL_DOCUMENTS' || modKey === 'LEGAL_CASES' || modKey === 'LEGAL_AND_DISPUTE') && !isLegalAndDisputeDivision(user.division)) continue;
+                }
                 if (modKey === 'CONTRACTS') {
                     modules.add(SystemModule.CONTRACTS);
                     modules.add(SystemModule.CONTRACT_TYPES);
@@ -449,6 +548,7 @@ export function getRequiredDivisionForModule(module: SystemModule): string {
         case SystemModule.LEGAL_CASES:
             return Division.LEGAL_AND_DISPUTE;
         case SystemModule.USERS:
+            return 'Admin ຫຼື ຫົວໜ້າພະແນກ (Admin or Division Head)';
         case SystemModule.AUDIT_LOGS:
             return 'Admin Only (ຜູ້ດູແລລະບົບເທົ່ານັ້ນ)';
         case SystemModule.DEPARTMENTS:

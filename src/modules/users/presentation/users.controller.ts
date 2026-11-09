@@ -39,7 +39,7 @@ import { ChangePasswordUseCase } from '../application/use-cases/change-password.
 @Controller('users')
 @UseGuards(JwtAuthGuard, RolesGuard, DivisionGuard)
 @RequiredModule(SystemModule.USERS)
-@Roles(UserRole.ADMIN)
+@Roles(UserRole.ADMIN, UserRole.DIVISION_HEAD)
 export class UsersController {
     constructor(
         private readonly getHrmEmployeeUseCase: GetHrmEmployeeUseCase,
@@ -54,7 +54,7 @@ export class UsersController {
 
     @ApiOperation({ summary: 'ປ່ຽນລະຫັດຜ່ານຂອງຕົນເອງ (Change Password - ສຳລັບຜູ້ໃຊ້ທົ່ວໄປ ແລະ Admin)' })
     @Patch('change-password')
-    @Roles(UserRole.ADMIN, UserRole.MAIN_USER, UserRole.EDITOR, UserRole.VIEWER)
+    @Roles(UserRole.ADMIN, UserRole.MAIN_USER, UserRole.EDITOR, UserRole.VIEWER, UserRole.DIVISION_HEAD)
     @RequiredModule(null)
     async changePassword(
         @Body() dto: ChangePasswordDto,
@@ -78,8 +78,11 @@ export class UsersController {
         summary: 'ຄົ້ນຫາຂໍ້ມູນພະນັກງານຈາກ HRM ດ້ວຍລະຫັດພະນັກງານ (ສຳລັບ Auto-fill ກ່ອນກົດບັນທຶກ)',
     })
     @Get('hrm/:empCode')
-    async lookupHrmEmployee(@Param('empCode') empCode: string) {
-        return this.getHrmEmployeeUseCase.execute(empCode);
+    async lookupHrmEmployee(
+        @Param('empCode') empCode: string,
+        @CurrentUser() user: any,
+    ) {
+        return this.getHrmEmployeeUseCase.execute(empCode, user);
     }
 
     @ApiOperation({ summary: 'ດຶງລາຍຊື່ຜູ້ໃຊ້ທັງໝົດ ພ້ອມ Pagination ແລະ Filter' })
@@ -89,14 +92,20 @@ export class UsersController {
     @ApiQuery({ name: 'role', required: false, enum: UserRole })
     @ApiQuery({ name: 'isActive', required: false, type: Boolean })
     @Get()
-    async findAll(@Query() query: any) {
-        return this.getUsersUseCase.execute(query);
+    async findAll(
+        @Query() query: any,
+        @CurrentUser() user: any,
+    ) {
+        return this.getUsersUseCase.execute(query, user);
     }
 
     @ApiOperation({ summary: 'ດຶງຂໍ້ມູນຜູ້ໃຊ້ລາຍບຸກຄົນຕາມ ID' })
     @Get(':id')
-    async findById(@Param('id', ParseUUIDPipe) id: string) {
-        return this.getUserByIdUseCase.execute(id);
+    async findById(
+        @Param('id', ParseUUIDPipe) id: string,
+        @CurrentUser() user: any,
+    ) {
+        return this.getUserByIdUseCase.execute(id, user);
     }
 
     @ApiOperation({
@@ -107,7 +116,7 @@ export class UsersController {
         @Body() dto: CreateUserDto,
         @CurrentUser() user: any,
     ) {
-        return this.createUserUseCase.execute(dto, user.userId);
+        return this.createUserUseCase.execute(dto, user);
     }
 
     @ApiOperation({ summary: 'ແກ້ໄຂບົດບາດ, ສະຖານະ ແລະ ສິດທິລະອຽດຂອງຜູ້ໃຊ້ (ອັບໂຫຼດ, ແກ້ໄຂ, ລົບ, ດາວໂຫຼດ, View) (ຂໍ້ 2, 3, 4, 5)' })
@@ -117,10 +126,11 @@ export class UsersController {
         @Body() dto: UpdateUserDto,
         @CurrentUser() user: any,
     ) {
-        return this.updateUserUseCase.execute(id, dto, user.userId);
+        return this.updateUserUseCase.execute(id, dto, user);
     }
 
     @ApiOperation({ summary: 'ລົບບັນຊີຜູ້ໃຊ້ (Soft Delete) (ຂໍ້ 2)' })
+    @Roles(UserRole.ADMIN)
     @Delete(':id')
     async delete(
         @Param('id', ParseUUIDPipe) id: string,

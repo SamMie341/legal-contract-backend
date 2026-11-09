@@ -175,13 +175,17 @@ export class LegalCaseRepository implements ILegalCaseRepository {
                     userId,
                     action: AuditAction.UPDATE_LEGAL_CASE,
                     oldValues: {
+                        caseId: existing.internalId,
                         caseCode: existing.caseCode,
                         defendant: existing.defendant,
+                        allegation: existing.allegation,
                         disputeStatus: existing.disputeStatus,
                     },
                     newValues: {
+                        caseId: updated.internalId,
                         caseCode: updated.caseCode,
                         defendant: updated.defendant,
+                        allegation: updated.allegation,
                         disputeStatus: updated.disputeStatus,
                     },
                 },

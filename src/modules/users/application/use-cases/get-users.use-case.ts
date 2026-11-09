@@ -9,13 +9,18 @@ export class GetUsersUseCase {
         private readonly userRepository: userRepoInterface.IUserRepository,
     ) { }
 
-    async execute(query: {
-        page?: number;
-        limit?: number;
-        search?: string;
-        role?: string;
-        isActive?: string;
-    }) {
+    async execute(
+        query: {
+            page?: number;
+            limit?: number;
+            search?: string;
+            role?: string;
+            isActive?: string;
+            division?: string;
+            department?: string;
+        },
+        currentUser?: any,
+    ) {
         const page = Number(query.page) || 1;
         const limit = Number(query.limit) || 10;
         const skip = (page - 1) * limit;
@@ -23,12 +28,23 @@ export class GetUsersUseCase {
         const isActive =
             query.isActive === undefined ? undefined : query.isActive === 'true';
 
+        const currentRole = currentUser ? String(currentUser?.roleRef?.name || currentUser?.role || '').toUpperCase() : '';
+        let divisionFilter = query.division;
+        let departmentFilter = query.department;
+
+        // ຫາກເປັນ DIVISION_HEAD ຈະຖືກບັງຄັບໃຫ້ເຫັນສະເພາະຜູ້ໃຊ້ພາຍໃນພະແນກຂອງຕົນເອງ
+        if (currentRole === 'DIVISION_HEAD' && currentUser?.division) {
+            divisionFilter = currentUser.division;
+        }
+
         const result = await this.userRepository.findAll({
             skip,
             take: limit,
             search: query.search,
             role: query.role as UserRole | undefined,
             isActive,
+            division: divisionFilter,
+            department: departmentFilter,
         });
 
         return {
