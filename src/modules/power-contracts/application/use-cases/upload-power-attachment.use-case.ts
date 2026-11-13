@@ -2,6 +2,7 @@ import { Injectable, Inject, BadRequestException, NotFoundException, ForbiddenEx
 import * as powerContractAttachmentRepositoryInterface from '../../domain/repositories/power-contract-attachment.repository.interface.js';
 import * as powerContractRepositoryInterface from '../../domain/repositories/power-contract.repository.interface.js';
 import { canAccessModule } from '../../../../core/utils/division-helper.util.js';
+import { decodeOriginalFilename } from '../../../../core/utils/file-upload.util.js';
 import { SystemModule } from '../../../../core/constants/division.constant.js';
 
 @Injectable()
@@ -33,7 +34,7 @@ export class UploadPowerAttachmentUseCase {
         // 2. ບັນທຶກຂໍ້ມູນໄຟລ໌ລົງຖານຂໍ້ມູນ
         const attachment = await this.attachmentRepo.createAttachment({
             powerContractId,
-            fileName: file.originalname,
+            fileName: decodeOriginalFilename(file.originalname),
             storageKey: file.path,
             mimeType: file.mimetype,
             fileSize: file.size,

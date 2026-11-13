@@ -2,6 +2,7 @@ import { Injectable, Inject, BadRequestException, NotFoundException, ForbiddenEx
 import * as attachmentRepoInterface from '../../domain/repositories/document-attachment.repository.interface.js';
 import * as docRepoInterface from '../../domain/repositories/legal-document.repository.interface.js';
 import { canAccessModule } from '../../../../core/utils/division-helper.util.js';
+import { decodeOriginalFilename } from '../../../../core/utils/file-upload.util.js';
 import { SystemModule } from '../../../../core/constants/division.constant.js';
 
 @Injectable()
@@ -33,7 +34,7 @@ export class UploadDocumentAttachmentUseCase {
 
         const attachment = await this.attachmentRepo.createAttachment({
             legalDocumentId,
-            fileName: file.originalname,
+            fileName: decodeOriginalFilename(file.originalname),
             fileUrl: file.path,
             fileType: file.mimetype,
             fileSize: file.size,

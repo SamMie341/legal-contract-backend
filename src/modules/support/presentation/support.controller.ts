@@ -12,16 +12,11 @@ import {
     UseGuards,
     UseInterceptors,
     UploadedFile,
-    BadRequestException,
     NotFoundException,
     Res,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery, ApiConsumes } from '@nestjs/swagger';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { diskStorage } from 'multer';
-import { v4 as uuidv4 } from 'uuid';
-import { extname, isAbsolute, resolve } from 'path';
-import { existsSync, mkdirSync } from 'fs';
 import type { Response } from 'express';
 import { TicketStatus, UserRole } from '@prisma/client';
 import { JwtAuthGuard } from '../../../core/guards/jwt-auth.guard.js';
@@ -31,6 +26,7 @@ import { RequiredModule } from '../../../core/decorators/required-module.decorat
 import { SystemModule } from '../../../core/constants/division.constant.js';
 import { Roles } from '../../../core/decorators/roles.decorator.js';
 import { CurrentUser } from '../../../core/decorators/current-user.decorator.js';
+import { createUploadMulterOptions, sendStoredFile } from '../../../core/utils/file-upload.util.js';
 
 import { CreateContactChannelDto } from '../application/dto/create-contact-channel.dto.js';
 import { CreateSupportTicketDto } from '../application/dto/create-support-ticket.dto.js';
@@ -44,34 +40,13 @@ import { GetSupportTicketsUseCase } from '../application/use-cases/get-support-t
 import { GetSupportTicketByIdUseCase } from '../application/use-cases/get-support-ticket-by-id.use-case.js';
 import { UpdateSupportTicketUseCase } from '../application/use-cases/update-support-ticket.use-case.js';
 
-// กำหนดโฟลเดอร์เก็บไฟล์รูปภาพแจ้งปัญหาไว้นอกโปรเจกต์ (../uploads/tickets หรือตามค่า TICKET_UPLOAD_DIR ใน .env)
-const ticketUploadDir = resolve(process.cwd(), process.env.TICKET_UPLOAD_DIR || '../uploads/tickets');
-if (!existsSync(ticketUploadDir)) {
-    mkdirSync(ticketUploadDir, { recursive: true });
-}
-
-const ticketStorage = diskStorage({
-    destination: ticketUploadDir,
-    filename: (req, file, cb) => {
-        const uniqueSuffix = uuidv4();
-        cb(null, `ticket-${uniqueSuffix}${extname(file.originalname)}`);
-    },
+const ticketUploadOptions = createUploadMulterOptions({
+    envKey: 'TICKET_UPLOAD_DIR',
+    defaultDir: '../uploads/tickets',
+    filenamePrefix: 'ticket-',
+    maxFileSize: 10 * 1024 * 1024, // 10 MB
+    invalidFileTypeMessage: 'ອະນຸຍາດສະເພາະໄຟລ໌ຮູບພາບ ຫຼື PDF ເທົ່ານັ້ນ (PNG, JPG, JPEG, GIF, WEBP, PDF)',
 });
-
-const ticketFileFilter = (req: any, file: Express.Multer.File, cb: any) => {
-    const allowedExtensions = /\.(png|jpg|jpeg|gif|webp|pdf)$/i;
-    const allowedMimeTypes = /^(image\/(png|jpeg|jpg|gif|webp)|application\/pdf)$/i;
-
-    if (!file.originalname.match(allowedExtensions) || !file.mimetype.match(allowedMimeTypes)) {
-        return cb(
-            new BadRequestException(
-                'ອະນຸຍາດສະເພາະໄຟລ໌ຮູບພາບ ຫຼື PDF ເທົ່ານັ້ນ (PNG, JPG, JPEG, GIF, WEBP, PDF)',
-            ),
-            false,
-        );
-    }
-    cb(null, true);
-};
 
 @ApiTags('Support & Contacts (ຊ່ອງທາງຕິດຕໍ່ ແລະ ແຈ້ງບັນຫາ - ຂໍ້ 6)')
 @ApiBearerAuth()
@@ -120,13 +95,7 @@ export class SupportController {
     @ApiOperation({ summary: 'ແຈ້ງບັນຫາ ຫຼື ສົ່ງຄຳຂໍປັບປຸງລະບົບ ພ້ອມແນບຮູບພາບ (ທຸກຄົນສາມາດສົ່ງໄດ້)' })
     @ApiConsumes('multipart/form-data', 'application/json')
     @Post('tickets')
-    @UseInterceptors(
-        FileInterceptor('file', {
-            storage: ticketStorage,
-            fileFilter: ticketFileFilter,
-            limits: { fileSize: 10 * 1024 * 1024 }, // 10 MB
-        }),
-    )
+    @UseInterceptors(FileInterceptor('file', ticketUploadOptions))
     async createTicket(
         @Body() dto: CreateSupportTicketDto,
         @UploadedFile() file: Express.Multer.File | undefined,
@@ -173,33 +142,9 @@ export class SupportController {
             throw new NotFoundException('ລາຍການນີ້ບໍ່ມີໄຟລ໌ແນບ');
         }
 
-        const filePath = isAbsolute(attachmentUrl)
-            ? attachmentUrl
-            : resolve(process.cwd(), attachmentUrl);
-
-        if (!existsSync(filePath)) {
-            return res.status(404).json({ message: 'Physical file not found on server' });
-        }
-
-        const ext = extname(filePath).toLowerCase();
-        const mimeMap: Record<string, string> = {
-            '.png': 'image/png',
-            '.jpg': 'image/jpeg',
-            '.jpeg': 'image/jpeg',
-            '.gif': 'image/gif',
-            '.webp': 'image/webp',
-            '.pdf': 'application/pdf',
-        };
-
-        return res.sendFile(filePath, {
-            headers: {
-                'Content-Type': mimeMap[ext] || 'application/octet-stream',
-                'Content-Disposition': 'inline',
-            },
-        }, (err) => {
-            if (err && !res.headersSent) {
-                res.status(500).json({ message: 'Error streaming file' });
-            }
+        return sendStoredFile(res, {
+            storageKey: attachmentUrl,
+            disposition: 'inline',
         });
     }
 

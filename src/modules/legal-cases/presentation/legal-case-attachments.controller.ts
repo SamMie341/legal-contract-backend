@@ -9,16 +9,10 @@ import {
     UploadedFile,
     UseGuards,
     Res,
-    BadRequestException,
-    ForbiddenException,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiConsumes, ApiBody } from '@nestjs/swagger';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { diskStorage } from 'multer';
-import { v4 as uuidv4 } from 'uuid';
-import { extname, isAbsolute, resolve } from 'path';
 import type { Response } from 'express';
-import { existsSync, mkdirSync } from 'fs';
 
 import { JwtAuthGuard } from '../../../core/guards/jwt-auth.guard.js';
 import { RolesGuard } from '../../../core/guards/roles.guard.js';
@@ -26,7 +20,7 @@ import { DivisionGuard } from '../../../core/guards/division.guard.js';
 import { RequiredModule } from '../../../core/decorators/required-module.decorator.js';
 import { SystemModule } from '../../../core/constants/division.constant.js';
 import { CurrentUser } from '../../../core/decorators/current-user.decorator.js';
-import { canAccessModule } from '../../../core/utils/division-helper.util.js';
+import { createUploadMulterOptions, sendStoredFile } from '../../../core/utils/file-upload.util.js';
 
 import { UploadCaseAttachmentUseCase } from '../application/use-cases/upload-case-attachment.use-case.js';
 import { GetCaseAttachmentsUseCase } from '../application/use-cases/get-case-attachments.use-case.js';
@@ -34,49 +28,11 @@ import { PreviewCaseAttachmentUseCase } from '../application/use-cases/preview-c
 import { DownloadCaseAttachmentUseCase } from '../application/use-cases/download-case-attachment.use-case.js';
 import { DeleteCaseAttachmentUseCase } from '../application/use-cases/delete-case-attachment.use-case.js';
 
-// ກຳນົດໂຟລເດີເກັບໄຟລ໌ໄວ້ນອກໂປຣເຈັກ (../uploads/legal-cases ຫຼື ຕາມຄ່າ UPLOAD_DIR_LEGAL_CASES)
-const uploadDir = resolve(
-    process.cwd(),
-    process.env.UPLOAD_DIR_LEGAL_CASES || '../uploads/legal-cases',
-);
-if (!existsSync(uploadDir)) {
-    mkdirSync(uploadDir, { recursive: true });
-}
-
-const storage = diskStorage({
-    destination: uploadDir,
-    filename: (req, file, cb) => {
-        const uniqueSuffix = uuidv4();
-        cb(null, `${uniqueSuffix}${extname(file.originalname)}`);
-    },
+const legalCaseUploadOptions = createUploadMulterOptions({
+    envKey: 'UPLOAD_DIR_LEGAL_CASES',
+    defaultDir: '../uploads/legal-cases',
+    module: SystemModule.LEGAL_CASES,
 });
-
-const fileFilter = (req: any, file: Express.Multer.File, cb: any) => {
-    const user = req.user;
-    if (user) {
-        if (!canAccessModule(user, SystemModule.LEGAL_CASES, 'canUpload')) {
-            return cb(
-                new ForbiddenException(
-                    'ທ່ານບໍ່ມີສິດອັບໂຫຼດໄຟລ໌ແນບ',
-                ),
-                false,
-            );
-        }
-    }
-
-    const allowedExtensions = /\.(pdf|png|jpg|jpeg|gif|webp)$/i;
-    const allowedMimeTypes = /^(application\/pdf|image\/(png|jpeg|jpg|gif|webp))$/i;
-
-    if (!file.originalname.match(allowedExtensions) || !file.mimetype.match(allowedMimeTypes)) {
-        return cb(
-            new BadRequestException(
-                'ອະນຸຍາດສະເພາະໄຟລ໌ PDF ແລະ ຮູບພາບເທົ່ານັ້ນ (PDF, PNG, JPG, JPEG, GIF, WEBP)',
-            ),
-            false,
-        );
-    }
-    cb(null, true);
-};
 
 @ApiTags('Legal Cases - Attachments (ເອກະສານຕິດຄັດສຳນວນຄະດີ)')
 @ApiBearerAuth()
@@ -118,13 +74,7 @@ export class LegalCaseAttachmentsController {
         },
     })
     @Post(':id/attachments')
-    @UseInterceptors(
-        FileInterceptor('file', {
-            storage,
-            fileFilter,
-            limits: { fileSize: 25 * 1024 * 1024 }, // 25 MB
-        }),
-    )
+    @UseInterceptors(FileInterceptor('file', legalCaseUploadOptions))
     async uploadFile(
         @Param('id') idOrCode: string,
         @UploadedFile() file: Express.Multer.File,
@@ -142,25 +92,11 @@ export class LegalCaseAttachmentsController {
     ) {
         const attachment = await this.previewUseCase.execute(attachmentId, user);
 
-        const filePath = isAbsolute(attachment.fileUrl)
-            ? attachment.fileUrl
-            : resolve(process.cwd(), attachment.fileUrl);
-
-        if (!existsSync(filePath)) {
-            return res.status(404).json({ message: 'Physical file not found on server' });
-        }
-
-        const mimeType = attachment.fileType || (attachment.fileName?.endsWith('.pdf') ? 'application/pdf' : 'application/octet-stream');
-
-        return res.sendFile(filePath, {
-            headers: {
-                'Content-Type': mimeType,
-                'Content-Disposition': `inline; filename="${encodeURIComponent(attachment.fileName)}"`,
-            },
-        }, (err) => {
-            if (err && !res.headersSent) {
-                res.status(500).json({ message: 'Error streaming file' });
-            }
+        return sendStoredFile(res, {
+            storageKey: attachment.fileUrl,
+            fileName: attachment.fileName,
+            mimeType: attachment.fileType,
+            disposition: 'inline',
         });
     }
 
@@ -173,25 +109,11 @@ export class LegalCaseAttachmentsController {
     ) {
         const attachment = await this.downloadUseCase.execute(attachmentId, user);
 
-        const filePath = isAbsolute(attachment.fileUrl)
-            ? attachment.fileUrl
-            : resolve(process.cwd(), attachment.fileUrl);
-
-        if (!existsSync(filePath)) {
-            return res.status(404).json({ message: 'Physical file not found on server' });
-        }
-
-        const mimeType = attachment.fileType || (attachment.fileName?.endsWith('.pdf') ? 'application/pdf' : 'application/octet-stream');
-
-        return res.sendFile(filePath, {
-            headers: {
-                'Content-Type': mimeType,
-                'Content-Disposition': `attachment; filename="${encodeURIComponent(attachment.fileName)}"`,
-            },
-        }, (err) => {
-            if (err && !res.headersSent) {
-                res.status(500).json({ message: 'Error downloading file' });
-            }
+        return sendStoredFile(res, {
+            storageKey: attachment.fileUrl,
+            fileName: attachment.fileName,
+            mimeType: attachment.fileType,
+            disposition: 'attachment',
         });
     }
 
