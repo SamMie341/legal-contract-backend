@@ -10,16 +10,10 @@ import {
   UseGuards,
   Req,
   Res,
-  BadRequestException,
-  ForbiddenException,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiConsumes, ApiBody } from '@nestjs/swagger';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { diskStorage } from 'multer';
-import { v4 as uuidv4 } from 'uuid';
-import { extname, isAbsolute, resolve } from 'path';
 import type { Response, Request } from 'express';
-import { existsSync, mkdirSync } from 'fs';
 
 import { JwtAuthGuard } from '../../../core/guards/jwt-auth.guard.js';
 import { RolesGuard } from '../../../core/guards/roles.guard.js';
@@ -27,7 +21,7 @@ import { DivisionGuard } from '../../../core/guards/division.guard.js';
 import { RequiredModule } from '../../../core/decorators/required-module.decorator.js';
 import { SystemModule } from '../../../core/constants/division.constant.js';
 import { CurrentUser } from '../../../core/decorators/current-user.decorator.js';
-import { canAccessModule } from '../../../core/utils/division-helper.util.js';
+import { createUploadMulterOptions, sendStoredFile } from '../../../core/utils/file-upload.util.js';
 
 import { UploadAttachmentUseCase } from '../application/use-cases/upload-attachment.use-case.js';
 import { DownloadAttachmentUseCase } from '../application/use-cases/download-attachment.use-case.js';
@@ -35,48 +29,11 @@ import { PreviewAttachmentUseCase } from '../application/use-cases/preview-attac
 import { GetAttachmentsUseCase } from '../application/use-cases/get-attachments.use-case.js';
 import { DeleteAttachmentUseCase } from '../application/use-cases/delete-attachment.use-case.js';
 
-// กำหนดโฟลเดอร์เก็บไฟล์ไว้นอกโปรเจกต์ (../uploads/contracts หรือตามค่า UPLOAD_DIR ใน .env)
-const uploadDir = resolve(process.cwd(), process.env.UPLOAD_DIR || '../uploads/contracts');
-if (!existsSync(uploadDir)) {
-  mkdirSync(uploadDir, { recursive: true });
-}
-
-// กำหนดที่เก็บไฟล์และชื่อไฟล์
-const storage = diskStorage({
-  destination: uploadDir,
-  filename: (req, file, cb) => {
-    const uniqueSuffix = uuidv4();
-    cb(null, `${uniqueSuffix}${extname(file.originalname)}`);
-  },
+const contractUploadOptions = createUploadMulterOptions({
+  envKey: 'UPLOAD_DIR',
+  defaultDir: '../uploads/contracts',
+  module: SystemModule.CONTRACTS,
 });
-
-// กรองเฉพาะไฟล์ PDF และรูปภาพเท่านั้น พร้อมตรวจสอบสิทธิ์ canUpload ก่อนบันทึกไฟล์ลง Disk
-const fileFilter = (req: any, file: Express.Multer.File, cb: any) => {
-  const user = req.user;
-  if (user) {
-    if (!canAccessModule(user, SystemModule.CONTRACTS, 'canUpload')) {
-      return cb(
-        new ForbiddenException(
-          'ທ່ານບໍ່ມີສິດອັບໂຫຼດໄຟລ໌ແນບ',
-        ),
-        false,
-      );
-    }
-  }
-
-  const allowedExtensions = /\.(pdf|png|jpg|jpeg|gif|webp)$/i;
-  const allowedMimeTypes = /^(application\/pdf|image\/(png|jpeg|jpg|gif|webp))$/i;
-
-  if (!file.originalname.match(allowedExtensions) || !file.mimetype.match(allowedMimeTypes)) {
-    return cb(
-      new BadRequestException(
-        'ອະນຸຍາດສະເພາະໄຟລ໌ PDF ແລະ ຮູບພາບເທົ່ານັ້ນ (PDF, PNG, JPG, JPEG, GIF, WEBP)',
-      ),
-      false,
-    );
-  }
-  cb(null, true);
-};
 
 @ApiTags('Attachments (ເອກະສານຕິດຄັດ)')
 @ApiBearerAuth()
@@ -115,13 +72,7 @@ export class AttachmentsController {
     },
   })
   @Post(':id/attachments')
-  @UseInterceptors(
-    FileInterceptor('file', {
-      storage,
-      fileFilter,
-      limits: { fileSize: 25 * 1024 * 1024 }, // 25 MB
-    }),
-  )
+  @UseInterceptors(FileInterceptor('file', contractUploadOptions))
   async uploadFile(
     @Param('id', ParseUUIDPipe) contractId: string,
     @UploadedFile() file: Express.Multer.File,
@@ -139,25 +90,11 @@ export class AttachmentsController {
   ) {
     const attachment = await this.previewUseCase.execute(attachmentId, user);
 
-    const filePath = isAbsolute(attachment.storageKey)
-      ? attachment.storageKey
-      : resolve(process.cwd(), attachment.storageKey);
-
-    if (!existsSync(filePath)) {
-      return res.status(404).json({ message: 'Physical file not found on server' });
-    }
-
-    const mimeType = attachment.mimeType || (attachment.fileName?.endsWith('.pdf') ? 'application/pdf' : 'application/octet-stream');
-
-    return res.sendFile(filePath, {
-      headers: {
-        'Content-Type': mimeType,
-        'Content-Disposition': `inline; filename="${encodeURIComponent(attachment.fileName)}"`,
-      },
-    }, (err) => {
-      if (err && !res.headersSent) {
-        res.status(500).json({ message: 'Error streaming file' });
-      }
+    return sendStoredFile(res, {
+      storageKey: attachment.storageKey,
+      fileName: attachment.fileName,
+      mimeType: attachment.mimeType,
+      disposition: 'inline',
     });
   }
 
@@ -176,25 +113,11 @@ export class AttachmentsController {
       req.headers['user-agent'],
     );
 
-    const filePath = isAbsolute(attachment.storageKey)
-      ? attachment.storageKey
-      : resolve(process.cwd(), attachment.storageKey);
-
-    if (!existsSync(filePath)) {
-      return res.status(404).json({ message: 'Physical file not found on server' });
-    }
-
-    const mimeType = attachment.mimeType || (attachment.fileName?.endsWith('.pdf') ? 'application/pdf' : 'application/octet-stream');
-
-    return res.sendFile(filePath, {
-      headers: {
-        'Content-Type': mimeType,
-        'Content-Disposition': `attachment; filename="${encodeURIComponent(attachment.fileName)}"`,
-      },
-    }, (err) => {
-      if (err && !res.headersSent) {
-        res.status(500).json({ message: 'Error downloading file' });
-      }
+    return sendStoredFile(res, {
+      storageKey: attachment.storageKey,
+      fileName: attachment.fileName,
+      mimeType: attachment.mimeType,
+      disposition: 'attachment',
     });
   }
 

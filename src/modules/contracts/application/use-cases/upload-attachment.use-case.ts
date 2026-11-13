@@ -2,6 +2,7 @@ import { Injectable, Inject, BadRequestException, NotFoundException, ForbiddenEx
 import * as contractAttachmentRepositoryInterface from '../../domain/repositories/contract-attachment.repository.interface.js';
 import { CONTRACT_REPOSITORY, type IContractRepository } from '../../domain/repositories/contract.repository.interface.js';
 import { canAccessModule } from '../../../../core/utils/division-helper.util.js';
+import { decodeOriginalFilename } from '../../../../core/utils/file-upload.util.js';
 import { SystemModule } from '../../../../core/constants/division.constant.js';
 
 @Injectable()
@@ -31,7 +32,7 @@ export class UploadAttachmentUseCase {
         // 2. บันทึกข้อมูลไฟล์ลง DB
         const attachment = await this.attachmentRepo.createAttachment({
             contractId,
-            fileName: file.originalname,
+            fileName: decodeOriginalFilename(file.originalname),
             storageKey: file.path,
             mimeType: file.mimetype,
             fileSize: file.size,
